@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { PHILOSOPHERS } from '@/lib/design-tokens';
-import { ChatInput, ChatInputTextArea, ChatInputSubmit } from '@/components/ui/chat-input';
+import { AIInputWithFile } from '@/components/ui/ai-input-with-file';
+import { composeMessageWithFile } from '@/lib/attach-file';
 import { BackgroundPaths } from '@/components/ui/background-paths';
 import { ThinkingBox, type ThinkingStep } from '@/components/thinking-box';
 
@@ -62,7 +63,6 @@ export default function PlatoPage() {
   const [greeting, setGreeting] = useState('Welcome');
   const [messages, setMessages] = useState<Message[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const convIdRef = useRef<string | undefined>(undefined);
@@ -119,7 +119,6 @@ export default function PlatoPage() {
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || isStreaming) return;
-    setInput('');
     setThinkingSteps([]);
     setMessages(prev => [
       ...prev,
@@ -419,16 +418,33 @@ export default function PlatoPage() {
                 ))}
               </div>
             )}
-            <ChatInput
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onSubmit={() => send(input)}
-              loading={isStreaming}
-              onStop={stopStream}
-            >
-              <ChatInputTextArea placeholder="Ask Plato anything about your business..." />
-              <ChatInputSubmit />
-            </ChatInput>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <AIInputWithFile
+                className="flex-1 py-0 sm:py-0 px-0 sm:px-0"
+                placeholder="Ask Plato anything about your business..."
+                accept=""
+                maxFileSize={5}
+                disabled={isStreaming}
+                onSubmit={(message, file) => {
+                  void composeMessageWithFile(message, file).then(text => { if (text) send(text); });
+                }}
+              />
+              {isStreaming && (
+                <button
+                  onClick={stopStream}
+                  title="Stop streaming"
+                  style={{
+                    padding: '8px 10px', border: '1px solid var(--border)',
+                    background: 'var(--surface-inset)', color: 'var(--foreground)',
+                    cursor: 'pointer', alignSelf: 'flex-end', height: 38, marginBottom: 8,
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                    <rect x="6" y="6" width="12" height="12" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

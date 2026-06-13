@@ -7,6 +7,7 @@ import { listCampaigns, createCampaign, launchCampaign, pauseCampaign, deleteCam
 import { Plus, Play, Pause, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { CreateDialog } from '@/components/create-dialog';
+import { CampaignOrbit } from '@/components/campaign-orbit';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: '#94a3b8', active: '#22c55e', paused: '#f59e0b',
@@ -98,6 +99,9 @@ export default function CampaignsPage() {
           { name: 'target_count', label: 'Target count', type: 'number', placeholder: '0' },
         ]}
       />
+
+      {/* Every campaign appears as a node in the orbital view — click one to inspect */}
+      {!isLoading && <CampaignOrbit campaigns={campaigns} />}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
         {isLoading && Array.from({ length: 4 }).map((_, i) => (

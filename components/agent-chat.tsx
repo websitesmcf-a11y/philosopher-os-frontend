@@ -5,7 +5,7 @@ import { Bot, Brain, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, W
 import { PHILOSOPHERS } from '@/lib/design-tokens';
 import type { PhilosopherKey } from '@/lib/design-tokens';
 import { useModeStore } from '@/lib/mode-store';
-import { ChatInput, ChatInputTextArea, ChatInputSubmit } from '@/components/ui/chat-input';
+import { AIInputWithFile } from '@/components/ui/ai-input-with-file';
 
 const ICON_MAP = { Brain, Bot, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare } as const;
 
@@ -57,7 +57,6 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
   const [histories, setHistories] = useState<Record<string, Message[]>>({});
   const [convIds, setConvIds] = useState<Record<string, string>>(loadConvIds);
   const [loadedAgents, setLoadedAgents] = useState<Record<string, boolean>>({});
-  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamMode, setStreamMode] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -252,10 +251,11 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
     }
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
-    if (!text || isLoading) return;
-    setInput('');
+  const sendMessage = async (rawText: string, file?: File) => {
+    if ((!rawText.trim() && !file) || isLoading) return;
+    const { composeMessageWithFile } = await import('@/lib/attach-file');
+    const text = await composeMessageWithFile(rawText, file);
+    if (!text) return;
 
     const agentName = selectedAgent.name;
     const userMsg: Message = { role: 'user', content: text, timestamp: new Date() };
@@ -417,17 +417,29 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
                 <Radio size={14} />
                 <span>Stream</span>
               </button>
-              <ChatInput
-                className="flex-1"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onSubmit={sendMessage}
-                loading={isStreaming}
-                onStop={stopStream}
-              >
-                <ChatInputTextArea placeholder={`Message ${selectedAgent.name}...`} />
-                <ChatInputSubmit disabled={isLoading && !isStreaming} />
-              </ChatInput>
+              <AIInputWithFile
+                className="flex-1 py-0 sm:py-0 px-0 sm:px-0"
+                placeholder={`Message ${selectedAgent.name}...`}
+                accept=""
+                maxFileSize={5}
+                disabled={isLoading && !isStreaming}
+                onSubmit={(message, file) => { void sendMessage(message, file); }}
+              />
+              {isStreaming && (
+                <button
+                  onClick={stopStream}
+                  title="Stop streaming"
+                  style={{
+                    padding: '8px 10px', border: '1px solid var(--border)',
+                    background: 'var(--surface-inset)', color: 'var(--foreground)',
+                    cursor: 'pointer', alignSelf: 'flex-end', height: 38,
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                    <rect x="6" y="6" width="12" height="12" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
