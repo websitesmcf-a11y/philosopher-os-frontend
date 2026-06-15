@@ -220,7 +220,7 @@ export default function NotificationsSettingsPage() {
   const handleSendTestNotification = async () => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
     const token = localStorage.getItem('auth_token');
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
     const results: string[] = [];
     const failed: string[] = [];
 
@@ -265,7 +265,7 @@ export default function NotificationsSettingsPage() {
       try {
         const res = await fetch(`${API_BASE}/notifications/test`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...headers },
+          headers,
           body: JSON.stringify({ channel: 'whatsapp' }),
         });
         const data = await res.json().catch(() => ({}));
@@ -289,7 +289,7 @@ export default function NotificationsSettingsPage() {
       try {
         const res = await fetch(`${API_BASE}/notifications/test`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...headers },
+          headers,
           body: JSON.stringify({ channel: 'email' }),
         });
         const data = await res.json().catch(() => ({}));
