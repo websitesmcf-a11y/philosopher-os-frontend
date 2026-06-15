@@ -1,41 +1,28 @@
-'use client';
+﻿'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Brain, Bot, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare, Activity, RefreshCw } from 'lucide-react';
-import { listAgentStatus, getDashboardMetrics, getActivity } from '@/lib/api-client';
-import { PHILOSOPHERS } from '@/lib/design-tokens';
-import { usePageTitle } from '@/lib/use-page-title';
-import type { PhilosopherKey } from '@/lib/design-tokens';
+import { listAgentStatus, getDashboardMetrics } from '@/lib/api-client';
+import { PHILOSOPHERS, GODS } from '@/lib/design-tokens';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import {
+  Brain, Radio, Zap, Target, Users, Play, Clock, CheckCircle2,
+  AlertCircle, Bot, Activity,
+} from 'lucide-react';
 
-const ICON_MAP = {
-  Brain, Bot, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare,
-} as const;
+type PhilosopherKey = keyof typeof PHILOSOPHERS;
 
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  online: { color: '#22c55e', label: 'Active' },
-  idle: { color: '#f59e0b', label: 'Idle' },
-  offline: { color: '#94a3b8', label: 'Offline' },
-  error: { color: '#ef4444', label: 'Error' },
-};
-
-function SkeletonCard() {
-  return (
-    <div className="card" style={{ padding: 20 }}>
-      <div className="skeleton" style={{ width: 40, height: 40, marginBottom: 12 }} />
-      <div className="skeleton" style={{ width: '60%', height: 14, marginBottom: 6 }} />
-      <div className="skeleton" style={{ width: '40%', height: 11 }} />
-      <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
-        <div className="skeleton" style={{ width: 50, height: 12 }} />
-        <div className="skeleton" style={{ width: 40, height: 12 }} />
-      </div>
-    </div>
-  );
-}
+const MISSION_TEMPLATES = [
+  { id: 'lead-gen', title: 'Lead Generation', desc: 'Find, enrich, score, and save leads from Google Maps, CSV, or web.', icon: Users, color: '#123C69', agents: 'Socrates, Athena, Iapetus, Erebos', steps: 7 },
+  { id: 'outreach', title: 'Outreach Campaign', desc: 'Contact leads with personalized messages across channels.', icon: Target, color: '#C9A24D', agents: 'Phantasos, Stilbon, Athena, Leonidas', steps: 7 },
+  { id: 'pipeline', title: 'Sales Pipeline', desc: 'Turn interested leads into paying clients.', icon: Play, color: '#6F7D4F', agents: 'Athena, Leonidas, Pythagoras, Odysseus', steps: 7 },
+  { id: 'cleanup', title: 'CRM Cleanup', desc: 'Fix messy CRM data, duplicates, and broken statuses.', icon: AlertCircle, color: '#8B2020', agents: 'Erebos, Aristotle, Archimedes', steps: 7 },
+  { id: 'daily', title: 'Daily Command', desc: 'Get today\'s exact priorities and execution plan.', icon: Clock, color: '#7B5EA7', agents: 'Odysseus, Leonidas, Astraeus', steps: 6 },
+  { id: 'intel', title: 'Market Intelligence', desc: 'Find the best industries, locations, and opportunities.', icon: Radio, color: '#3B5E7A', agents: 'Astraeus, Athena, Pythagoras, Plato', steps: 6 },
+];
 
 export default function MissionControlPage() {
-  usePageTitle('Mission Control');
-
-  const { data: agentStatus, isLoading: agentsLoading, error: agentsError } = useQuery({
+  const { data: agentStatus, isLoading } = useQuery({
     queryKey: ['agent-status'],
     queryFn: listAgentStatus,
     refetchInterval: 10_000,
@@ -44,222 +31,171 @@ export default function MissionControlPage() {
   const { data: metrics } = useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: getDashboardMetrics,
-    refetchInterval: 30_000,
   });
 
-  const { data: activity } = useQuery({
-    queryKey: ['activity'],
-    queryFn: () => getActivity(10),
-    refetchInterval: 15_000,
-  });
-
-  const agentEntries = Object.entries(PHILOSOPHERS);
-  const statusMap = new Map(
-    (agentStatus?.agents ?? []).map(a => [a.name.toLowerCase(), a])
-  );
-
-  const onlineCount = (agentStatus?.agents ?? []).filter(
-    a => a.status === 'online'
-  ).length;
-  const totalAgents = agentEntries.length;
-  const allNominal = !agentsLoading && !agentsError && onlineCount > 0;
-  const degraded = !agentsLoading && !agentsError && !allNominal && (agentStatus?.agents ?? []).length > 0;
+  const agentStatuses = agentStatus?.agents ?? [];
+  const onlineCount = agentStatuses.filter((a: { status: string }) => a.status === 'online').length;
+  const totalAgents = 10 + 5; // 10 philosophers + 5 gods/titans
 
   return (
-    <div className="page-content fade-in">
-      {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>
-              Mission Control
-            </h1>
-            {!agentsLoading && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600,
-                color: allNominal ? '#22c55e' : degraded ? '#f59e0b' : '#94a3b8',
-              }}>
-                <span className="live-dot" style={{
-                  width: 7, height: 7,
-                  background: allNominal ? '#22c55e' : degraded ? '#f59e0b' : '#94a3b8',
-                }} />
-                {allNominal ? 'All systems nominal' : degraded ? 'Partially degraded' : 'Offline'}
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Real-time agent council status and system health
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--foreground-secondary)' }}>
-          <RefreshCw size={13} />
-          Auto-refreshes every 10s
-        </div>
+    <div className="page-content">
+      <PageHeader
+        title="Mission Control"
+        description="Real-time council status, system health, and mission orchestration"
+        icon={Radio}
+        iconColor="#123C69"
+      />
+
+      {/* Health Stats */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: 12, marginBottom: 28,
+      }}>
+        <StatCard label="Total Agents" value={totalAgents} icon={Bot} color="#123C69" />
+        <StatCard label="Active Now" value={onlineCount} icon={Activity} color="#16A34A" />
+        <StatCard label="Actions Today" value={metrics?.agent_actions_today ?? 0} icon={Zap} color="#C9A24D" />
+        <StatCard label="Active Missions" value={0} icon={Target} color="#8B2020" />
       </div>
 
-      {/* Error state */}
-      {agentsError && (
-        <div className="etched-surface" style={{ padding: 40, textAlign: 'center', marginBottom: 24 }}>
-          <p style={{ color: '#ef4444', fontSize: 14 }}>
-            Failed to load agent statuses. Please try again later.
-          </p>
-        </div>
-      )}
-
-      {/* Council Overview Grid */}
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px', paddingLeft: 4, fontFamily: 'var(--font-heading)' }}>
-          Philosopher Council
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
-          {agentsLoading
-            ? agentEntries.map(([key]) => <SkeletonCard key={key} />)
-            : agentEntries.map(([key, philosopher]) => {
-                const agentKey = key as PhilosopherKey;
-                const statusData = statusMap.get(agentKey);
-                const status = statusData?.status || 'offline';
-                const statusConf = STATUS_CONFIG[status] || STATUS_CONFIG.offline;
-                const Icon = ICON_MAP[philosopher.icon as keyof typeof ICON_MAP] || Bot;
-                const completed = statusData?.tasks_completed ?? 0;
-                const failed = statusData?.tasks_failed ?? 0;
-                const total = completed + failed;
-                const failRatio = total > 0 ? failed / total : 0;
-
-                return (
-                  <div key={agentKey} className="etched-surface" style={{
-                    padding: 20,
-                    borderLeft: `3px solid ${philosopher.color}`,
-                    position: 'relative', overflow: 'hidden',
-                  }}>
-                    <div aria-hidden style={{
-                      position: 'absolute', inset: 0, pointerEvents: 'none',
-                      background: philosopher.gradient, opacity: 0.03,
-                    }} />
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, position: 'relative' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 36, height: 36, display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          background: `${philosopher.color}15`,
-                        }}>
-                          <Icon size={18} color={philosopher.color} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 600 }}>{philosopher.name}</div>
-                          <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 1 }}>{philosopher.role}</div>
-                        </div>
-                      </div>
-                      <span className="badge" style={{
-                        background: `${statusConf.color}15`,
-                        color: statusConf.color, fontSize: 10, padding: '2px 7px',
-                      }}>
-                        <span className="dot" style={{
-                          width: 5, height: 5, background: statusConf.color,
-                          animation: status === 'online' ? 'glowPulse 2s infinite' : undefined,
-                          borderRadius: 0,
-                        }} />
-                        {statusConf.label}
-                      </span>
-                    </div>
-
-                    {/* Task bar */}
-                    {total > 0 && (
-                      <div style={{ position: 'relative', marginTop: 10 }}>
-                        <div style={{
-                          height: 4, background: 'var(--border)',
-                          overflow: 'hidden',
-                        }}>
-                          <div style={{
-                            height: '100%',
-                            width: `${(completed / total) * 100}%`,
-                            background: failRatio > 0.2 ? '#f59e0b' : '#22c55e',
-                            transition: 'width 0.5s ease',
-                          }} />
-                        </div>
-                        <div style={{
-                          display: 'flex', justifyContent: 'space-between',
-                          fontSize: 11, color: 'var(--muted)', marginTop: 6,
-                        }}>
-                          <span>{completed} completed</span>
-                          <span>{failed} failed</span>
-                        </div>
-                      </div>
-                    )}
-                    {total === 0 && (
-                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>
-                        No tasks yet
-                      </div>
-                    )}
+      {/* Philosopher Council */}
+      <h2 style={{ fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-heading)', marginBottom: 12 }}>
+        Philosopher Council
+      </h2>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+        gap: 10, marginBottom: 32,
+      }}>
+        {isLoading
+          ? Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="card" style={{ padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="skeleton" style={{ width: 32, height: 32 }} />
+                  <div>
+                    <div className="skeleton" style={{ width: 70, height: 12, marginBottom: 6 }} />
+                    <div className="skeleton" style={{ width: 90, height: 10 }} />
                   </div>
-                );
-              })
-          }
-        </div>
+                </div>
+              </div>
+            ))
+          : (Object.keys(PHILOSOPHERS) as Array<keyof typeof PHILOSOPHERS>).map((key) => {
+              const agent = PHILOSOPHERS[key];
+              const status = agentStatuses.find((a: { name: string }) => a.name.toLowerCase() === key)?.status || 'offline';
+              const dotColor = status === 'online' ? '#16A34A' : status === 'idle' ? '#B8860B' : '#94a3b8';
+
+              return (
+                <div key={key} className="card stone-hover" style={{
+                  padding: '14px 16px',
+                  borderLeft: `3px solid ${agent.color}`,
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  cursor: 'pointer',
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: agent.gradient,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 700, color: '#FFFFFF',
+                    flexShrink: 0, fontFamily: 'var(--font-heading)',
+                  }}>
+                    {agent.name.charAt(0)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{agent.name}</div>
+                    <div style={{ fontSize: 10, color: 'var(--foreground-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {agent.role}
+                    </div>
+                  </div>
+                  <span style={{
+                    width: 7, height: 7, borderRadius: '50%',
+                    background: dotColor,
+                    animation: status === 'online' ? 'glowPulse 2s infinite' : undefined,
+                    flexShrink: 0,
+                  }} />
+                </div>
+              );
+            })
+        }
       </div>
 
-      {/* Bottom row: activity + health */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* Recent Activity */}
-        <div className="etched-surface" style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Activity size={15} /> Recent Activity
-          </h3>
-          {!activity && (
-            <p style={{ fontSize: 13, color: 'var(--muted)' }}>Loading activity...</p>
-          )}
-          {activity && activity.items.length === 0 && (
-            <p style={{ fontSize: 13, color: 'var(--muted)' }}>No activity yet</p>
-          )}
-          {activity && activity.items.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {activity.items.slice(0, 8).map((item, i) => (
-                <div key={i} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  fontSize: 13, paddingBottom: 8,
-                  borderBottom: i < 7 ? '1px solid var(--border-light)' : 'none',
-                }}>
-                  <span style={{ color: 'var(--foreground-secondary)' }}>{item.text}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0, marginLeft: 12 }}>
-                    {new Date(item.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              ))}
+      {/* Gods & Titans */}
+      <h2 style={{ fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-heading)', marginBottom: 12 }}>
+        Gods & Titans
+      </h2>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+        gap: 10, marginBottom: 32,
+      }}>
+        {Object.entries(GODS).map(([key, god]) => (
+          <div key={key} className="card stone-hover" style={{
+            padding: '14px 16px',
+            borderLeft: `3px solid ${god.color}`,
+            display: 'flex', alignItems: 'center', gap: 10,
+            cursor: 'pointer',
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: god.gradient,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, fontWeight: 700, color: '#FFFFFF',
+              flexShrink: 0, fontFamily: 'var(--font-heading)',
+            }}>
+              {god.name.charAt(0)}
             </div>
-          )}
-        </div>
-
-        {/* System Health */}
-        <div className="etched-surface" style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Activity size={15} /> System Health
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ padding: 14, background: 'var(--surface-inset)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Total Agents</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>{totalAgents}</div>
-            </div>
-            <div style={{ padding: 14, background: 'var(--surface-inset)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Active Now</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4, color: '#22c55e' }}>{onlineCount}</div>
-            </div>
-            <div style={{ padding: 14, background: 'var(--surface-inset)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Actions Today</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>
-                {metrics?.agent_actions_today ?? '-'}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{god.name}</div>
+              <div style={{ fontSize: 10, color: 'var(--foreground-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {god.role}
               </div>
             </div>
-            <div style={{ padding: 14, background: 'var(--surface-inset)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Health Status</div>
-              <div style={{
-                fontSize: 14, fontWeight: 600, marginTop: 4,
-                color: allNominal ? '#22c55e' : '#94a3b8',
-              }}>
-                {allNominal ? 'Healthy' : agentsLoading ? 'Checking...' : degraded ? 'Degraded' : 'Unknown'}
-              </div>
-            </div>
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: '#16A34A',
+              flexShrink: 0,
+            }} />
           </div>
-        </div>
+        ))}
+      </div>
+
+      {/* Mission Templates */}
+      <h2 style={{ fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-heading)', marginBottom: 12 }}>
+        Mission Templates
+      </h2>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+        gap: 16,
+      }}>
+        {MISSION_TEMPLATES.map(m => {
+          const IconComponent = m.icon;
+          return (
+            <div key={m.id} className="card stone-hover" style={{ padding: 20, cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 8,
+                  background: `${m.color}15`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <IconComponent size={20} color={m.color} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-heading)' }}>
+                    {m.title}
+                  </h3>
+                  <p style={{ fontSize: 12, color: 'var(--foreground-secondary)', marginTop: 2 }}>
+                    {m.desc}
+                  </p>
+                </div>
+              </div>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                fontSize: 11, color: 'var(--muted)',
+                paddingTop: 8, borderTop: '0.5px solid var(--border-light)',
+              }}>
+                <span>{m.agents}</span>
+                <span>{m.steps} execution steps</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

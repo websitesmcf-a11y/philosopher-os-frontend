@@ -2,11 +2,13 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { listLeads, createLead, deleteLead, type LeadStatus } from '@/lib/api-client';
-import { Search, Plus, Trash2 } from 'lucide-react';
+import { listLeads, createLead, deleteLead, listLeadLists, type LeadStatus } from '@/lib/api-client';
+import { Search, Plus, Trash2, Layers, Lock, Unlock } from 'lucide-react';
 import { useState } from 'react';
+import Link from 'next/link';
 import { usePageTitle } from '@/lib/use-page-title';
 import { CreateDialog } from '@/components/create-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const STATUS_LABEL: Record<string, string> = {
   new: 'New', contacted: 'Contacted', qualified: 'Qualified',
@@ -22,13 +24,24 @@ export default function LeadsPage() {
   usePageTitle('Leads');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
+  const [listFilter, setListFilter] = useState<string>('available');
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['leads', statusFilter, search],
-    queryFn: () => listLeads({ page: 1, page_size: 50, ...(statusFilter !== 'all' ? { status: statusFilter } : {}) }),
+    queryKey: ['leads', statusFilter, search, listFilter],
+    queryFn: () => listLeads({
+      page: 1, page_size: 50,
+      ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+      ...(listFilter === 'available' ? { list_id: 'null' } : listFilter !== 'all' ? { list_id: listFilter } : {}),
+    }),
   });
+
+  const { data: listsData } = useQuery({
+    queryKey: ['lead-lists', 'filter'],
+    queryFn: () => listLeadLists(),
+  });
+  const leadLists = listsData?.items ?? [];
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['leads'] });
 
@@ -98,8 +111,22 @@ export default function LeadsPage() {
         ]}
       />
 
+      {/* Lead pool info banner */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+        padding: '8px 14px', borderRadius: 6,
+        background: 'rgba(111,125,79,0.05)', border: '1px solid rgba(111,125,79,0.12)',
+        fontSize: 12, color: 'var(--foreground-secondary)',
+      }}>
+        <Layers size={14} color="#6F7D4F" />
+        <span>
+          Showing <strong>available</strong> leads — leads assigned to a campaign or list are hidden from this view.
+          Change the filter to see them.
+        </span>
+      </div>
+
       {/* Filters bar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
           <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
           <input
@@ -119,6 +146,18 @@ export default function LeadsPage() {
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
+        <select
+          value={listFilter}
+          onChange={e => setListFilter(e.target.value)}
+          style={{ width: 'auto', paddingRight: 28 }}
+        >
+          <option value="all">All Lists</option>
+          <option value="available">🔓 Available (no list)</option>
+          <option value="reserved">🔒 Reserved</option>
+          {leadLists.map(ll => (
+            <option key={ll.id} value={ll.id}>{ll.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}
@@ -127,9 +166,11 @@ export default function LeadsPage() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Phone</th>
               <th>Company</th>
               <th>Email</th>
               <th>Status</th>
+              <th>List</th>
               <th>Score</th>
               <th>Created</th>
               <th></th>
@@ -137,14 +178,30 @@ export default function LeadsPage() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Loading...</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Loading...</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>No leads found</td></tr>
+              <tr><td colSpan={9} style={{ padding: 0 }}>
+                <EmptyState
+                  pageKey="leads"
+                  title="No leads yet"
+                  description="Add your first lead manually or run a lead generation mission to populate your CRM."
+                  action={
+                    <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
+                      <Plus size={16} /> Add Lead
+                    </button>
+                  }
+                />
+              </td></tr>
             )}
-            {filtered.map(lead => (
+            {filtered.map(lead => {
+              // Try to find which list this lead belongs to
+              const leadList = (lead as any).list_id ? leadLists.find(ll => ll.id === (lead as any).list_id) : null;
+              const isReserved = !!(lead as any).list_id;
+              return (
               <tr key={lead.id}>
                 <td style={{ fontWeight: 500 }}>{lead.name || '—'}</td>
+                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{lead.phone || '—'}</td>
                 <td>{lead.company || '—'}</td>
                 <td style={{ color: 'var(--foreground-secondary)' }}>{lead.email || '—'}</td>
                 <td>
@@ -154,6 +211,21 @@ export default function LeadsPage() {
                   }}>
                     {STATUS_LABEL[lead.status] || lead.status}
                   </span>
+                </td>
+                <td>
+                  {leadList ? (
+                    <Link href={`/lead-lists/${leadList.id}`} style={{ textDecoration: 'none' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(111,125,79,0.1)', color: '#6F7D4F', fontWeight: 500 }}>
+                        <Layers size={11} /> {leadList.name}
+                      </span>
+                    </Link>
+                  ) : isReserved ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--muted)' }}>
+                      <Lock size={11} /> Reserved
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>—</span>
+                  )}
                 </td>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -174,7 +246,8 @@ export default function LeadsPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

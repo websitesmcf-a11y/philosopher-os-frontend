@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { searchKnowledge, addKnowledge, deleteKnowledge } from '@/lib/api-client';
-import { BookOpen, Search, Plus, FileText, Trash2 } from 'lucide-react';
+import { searchKnowledge, addKnowledge, deleteKnowledge, uploadKnowledgeFile } from '@/lib/api-client';
+import { BookOpen, Search, Plus, FileText, Trash2, Upload, Loader2 } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { CreateDialog } from '@/components/create-dialog';
 
@@ -12,6 +12,8 @@ export default function KnowledgePage() {
   usePageTitle('Knowledge Base');
   const [query, setQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -53,9 +55,35 @@ export default function KnowledgePage() {
             Search and manage your agency knowledge
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
-          <Plus size={16} /> Add Article
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md,.pdf,.docx,.csv,.json"
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setUploading(true);
+              try {
+                const result = await uploadKnowledgeFile(file);
+                toast.success(result.message);
+                queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+              } catch (err: any) {
+                toast.error(err?.message || 'Upload failed');
+              } finally {
+                setUploading(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }
+            }}
+          />
+          <button className="btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {uploading ? <Loader2 size={16} /> : <Upload size={16} />} {uploading ? 'Uploading...' : 'Upload File'}
+          </button>
+          <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
+            <Plus size={16} /> Add Article
+          </button>
+        </div>
       </div>
 
       <CreateDialog

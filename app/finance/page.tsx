@@ -1,10 +1,21 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { getMRR, getInvoices, getCashflow, formatCurrency } from '@/lib/api-client';
-import { Wallet, DollarSign, TrendingUp, TrendingDown, ArrowUpRight, BarChart3, MoreHorizontal } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { getMRR, getInvoices, getCashflow, createInvoice, formatCurrency } from '@/lib/api-client';
+import { Wallet, DollarSign, TrendingUp, TrendingDown, ArrowUpRight, BarChart3, MoreHorizontal, Plus, Receipt } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
+import { CreateDialog } from '@/components/create-dialog';
+
+const STATUS_COLOR: Record<string, string> = {
+  draft: '#94a3b8',
+  sent: '#3b82f6',
+  paid: '#22c55e',
+  overdue: '#ef4444',
+  cancelled: '#6b7280',
+};
 
 function ChartEmptyState({ message }: { message: string }) {
   return (
@@ -20,8 +31,12 @@ function ChartEmptyState({ message }: { message: string }) {
 
 export default function FinancePage() {
   const { data: mrr, isLoading: mrrLoading, error: mrrError } = useQuery({ queryKey: ['mrr'], queryFn: () => getMRR('monthly') });
-  const { data: invoices, isLoading: invLoading, error: invError } = useQuery({ queryKey: ['invoices'], queryFn: () => getInvoices({ page: 1, page_size: 20 }) });
+  const { data: invoices, isLoading: invLoading, error: invError } = useQuery({ queryKey: ['invoices'], queryFn: () => getInvoices({ page: 1, page_size: 50 }) });
   const { data: cashflow, isLoading: cfLoading, error: cfError } = useQuery({ queryKey: ['cashflow'], queryFn: getCashflow });
+
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [revenueDialogOpen, setRevenueDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const hasError = mrrError || invError || cfError;
   const isLoading = mrrLoading || invLoading || cfLoading;
@@ -35,14 +50,100 @@ export default function FinancePage() {
     { name: 'Contraction', value: -mrr.contraction },
   ] : [];
 
+  const invalidateFinance = () => {
+    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['mrr'] });
+    queryClient.invalidateQueries({ queryKey: ['cashflow'] });
+  };
+
+  const createInvoiceMut = useMutation({
+    mutationFn: (values: Record<string, string>) => createInvoice({
+      client_name: values.client_name || undefined,
+      amount: parseFloat(values.amount),
+      description: values.description || undefined,
+      status: (values.status || 'draft') as any,
+      due_date: values.due_date ? new Date(values.due_date).toISOString() : undefined,
+    }),
+    onSuccess: () => {
+      toast.success('Invoice created');
+      setInvoiceDialogOpen(false);
+      invalidateFinance();
+    },
+    onError: (e: Error) => toast.error(`Failed to create invoice: ${e.message}`),
+  });
+
+  const logRevenueMut = useMutation({
+    mutationFn: (values: Record<string, string>) => createInvoice({
+      amount: parseFloat(values.amount),
+      description: values.description || undefined,
+      status: 'paid',
+      due_date: values.date ? new Date(values.date).toISOString() : undefined,
+    }),
+    onSuccess: () => {
+      toast.success('Revenue logged');
+      setRevenueDialogOpen(false);
+      invalidateFinance();
+    },
+    onError: (e: Error) => toast.error(`Failed to log revenue: ${e.message}`),
+  });
+
   return (
     <div className="page-content page-enter">
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Finance</h1>
-        <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-          Revenue, MRR breakdown, and invoicing
-        </p>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Finance</h1>
+          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
+            Revenue, MRR breakdown, and invoicing
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={() => setRevenueDialogOpen(true)}>
+            <Plus size={16} /> Log Revenue
+          </button>
+          <button className="btn btn-primary" onClick={() => setInvoiceDialogOpen(true)}>
+            <Plus size={16} /> Add Invoice
+          </button>
+        </div>
       </div>
+
+      {/* Invoice creation modal */}
+      <CreateDialog
+        open={invoiceDialogOpen}
+        onClose={() => setInvoiceDialogOpen(false)}
+        title="New Invoice"
+        submitting={createInvoiceMut.isPending}
+        onSubmit={async values => { await createInvoiceMut.mutateAsync(values); }}
+        fields={[
+          { name: 'client_name', label: 'Client Name', type: 'text', placeholder: 'Client name', required: true },
+          { name: 'amount', label: 'Invoice Amount', type: 'number', placeholder: '0.00', required: true },
+          { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Optional description' },
+          {
+            name: 'status', label: 'Status', type: 'select', defaultValue: 'draft',
+            options: [
+              { label: 'Draft', value: 'draft' },
+              { label: 'Sent', value: 'sent' },
+              { label: 'Paid', value: 'paid' },
+              { label: 'Overdue', value: 'overdue' },
+            ],
+          },
+          { name: 'due_date', label: 'Due Date', type: 'date' },
+        ]}
+      />
+
+      {/* Log Revenue modal */}
+      <CreateDialog
+        open={revenueDialogOpen}
+        onClose={() => setRevenueDialogOpen(false)}
+        title="Log Revenue"
+        submitting={logRevenueMut.isPending}
+        onSubmit={async values => { await logRevenueMut.mutateAsync(values); }}
+        fields={[
+          { name: 'amount', label: 'Amount', type: 'number', placeholder: '0.00', required: true },
+          { name: 'description', label: 'Description', type: 'text', placeholder: 'Revenue source' },
+          { name: 'date', label: 'Date', type: 'date' },
+        ]}
+      />
 
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -92,6 +193,7 @@ export default function FinancePage() {
         )}
       </div>
 
+      {/* Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
         {/* MRR breakdown chart */}
         <div className="etched-surface" style={{ padding: 20 }}>
@@ -119,7 +221,7 @@ export default function FinancePage() {
           )}
         </div>
 
-        {/* Recent invoices */}
+        {/* Recent invoices sidebar */}
         <div className="etched-surface" style={{ padding: 20 }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 16px', color: 'var(--foreground-secondary)', fontFamily: 'var(--font-heading)' }}>
             Recent Invoices
@@ -160,6 +262,56 @@ export default function FinancePage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Full invoice table */}
+      <div className="etched-surface" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Receipt size={16} style={{ color: 'var(--muted)' }} />
+          <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, fontFamily: 'var(--font-heading)' }}>All Invoices</h3>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Client</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Due Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invLoading ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Loading invoices...</td></tr>
+            ) : invoiceList.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>
+                No invoices yet
+              </td></tr>
+            ) : (
+              invoiceList.map(inv => (
+                <tr key={inv.id}>
+                  <td style={{ fontWeight: 500 }}>{inv.invoice_number}</td>
+                  <td style={{ color: 'var(--foreground-secondary)', fontSize: 13 }}>
+                    {(inv as any).client_name || inv.client_id || '—'}
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{formatCurrency(inv.amount)}</td>
+                  <td>
+                    <span className="badge" style={{
+                      background: `${STATUS_COLOR[inv.status] || '#94a3b8'}15`,
+                      color: STATUS_COLOR[inv.status] || '#94a3b8',
+                      textTransform: 'capitalize',
+                    }}>
+                      {inv.status}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: 13, color: 'var(--muted)' }}>
+                    {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -1,59 +1,93 @@
 @import "tailwindcss";
 
+/* ── Loader animations ─────────────────────────── */
+@keyframes typing { 0%,100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-2px); opacity: 1; } }
+@keyframes loading-dots { 0%,100% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes wave { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.6); } }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes text-blink { 0%,100% { color: var(--primary); } 50% { color: var(--muted-foreground); } }
+@keyframes bounce-dots { 0%,100% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } }
+@keyframes thin-pulse { 0%,100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 0.4; } }
+@keyframes pulse-dot { 0%,100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.5); opacity: 1; } }
+@keyframes wave-bars { 0%,100% { transform: scaleY(1); opacity: 0.5; } 50% { transform: scaleY(0.6); opacity: 1; } }
+@keyframes shimmer { 0% { background-position: 200% 50%; } 100% { background-position: -200% 50%; } }
+@keyframes spinner-fade { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+/* ── Page enter animation ─────────────────────── */
+.fade-in {
+  animation: fadeInContent 0.6s ease-out;
+}
+@keyframes fadeInContent {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 :root {
-  /* ── Core colors — Bone/Travertine palette ─── */
-  --background: #FCF9F4;
-  --foreground: #1C1C19;
-  --foreground-secondary: #4A4A44;
-  --surface: #FCF9F4;
-  --surface-raised: #F5F0E8;
-  --surface-inset: #EDE8DE;
-  --surface-variant: #E5E2DD;
+  /* ── Philosopher OS — Cool Premium Palette (matched to design refs) ─── */
+  --background: #E8E8E5;
+  --foreground: #171A21;
+  --foreground-secondary: #3D4047;
+  --surface: #EDEDEA;
+  --surface-raised: #E2E2DE;
+  --surface-inset: #D6D6D2;
+  --surface-variant: #CACAC5;
 
   /* ── Accents ─────────────────────────── */
-  --accent: #735C00;
-  --accent-bright: #D4AF37;
-  --accent-light: #F5ECD0;
-  --accent-subtle: rgba(115, 92, 0, 0.08);
-  --sienna: #944925;
-  --sienna-bright: #FE9E72;
-  --sienna-subtle: rgba(148, 73, 37, 0.08);
+  --accent: #1A2B4C;
+  --accent-bright: #243B64;
+  --accent-light: #D0D8E8;
+  --accent-subtle: rgba(26, 43, 76, 0.07);
+  --gold: #A8883A;
+  --gold-bright: #B89A4A;
+  --gold-light: #E8DCC0;
+  --gold-subtle: rgba(168, 136, 58, 0.08);
+  --olive: #5A6B48;
+  --olive-light: #D8E0CC;
+  --purple: #6B4E99;
+  --purple-light: #E0D8EE;
 
   /* ── Borders ─────────────────────────── */
-  --border: #D4CFC4;
-  --border-light: #E5E0D5;
-  --border-accent: rgba(212, 175, 55, 0.3);
-  --muted: #8A8A82;
+  --border: #D4CDBC;
+  --border-light: #E5DECF;
+  --border-accent: rgba(201, 162, 77, 0.25);
+  --muted: #8A8576;
 
   /* ── Semantic ────────────────────────── */
-  --success: #4A6741;
-  --warning: #7A543B;
+  --success: #4A7A3E;
+  --warning: #B8860B;
   --error: #8B2020;
-  --info: #3B5E7A;
+  --info: #123C69;
 
   /* ── Philosopher accent slots ────────── */
-  --philosopher-plato: #735C00;
-  --philosopher-socrates: #944925;
-  --philosopher-aristotle: #4A6741;
-  --philosopher-leonidas: #8B2020;
-  --philosopher-athena: #2B5F5F;
-  --philosopher-heraclitus: #7A543B;
+  --philosopher-plato: #123C69;
+  --philosopher-socrates: #6F7D4F;
+  --philosopher-aristotle: #5B6B3A;
+  --philosopher-athena: #2B5F6B;
+  --philosopher-heraclitus: #C9A24D;
   --philosopher-pythagoras: #4A4A7A;
-  --philosopher-solon: #5B6B3A;
+  --philosopher-solon: #3B6B5E;
+  --philosopher-leonidas: #8B2020;
   --philosopher-archimedes: #3B5E7A;
   --philosopher-odysseus: #6B3B6B;
 
-  /* ── Radii — ALL ZERO ────────────────── */
-  --radius: 0px;
-  --radius-sm: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
+  /* ── God/Titan accent slots ──────────── */
+  --god-iapetus: #123C69;
+  --god-astraeus: #7B5EA7;
+  --god-erebos: #171A21;
+  --god-phantasos: #C9A24D;
+  --god-stilbon: #6F7D4F;
 
-  /* ── Shadows — etched only, no float ─── */
-  --shadow-etched: inset 0 1px 2px rgba(28,28,25,0.06);
-  --shadow-gallery: 0 0 40px rgba(28,28,25,0.03);
-  --shadow-museum: 0 0 60px rgba(28,28,25,0.05), 0 0 0 1px rgba(212,207,196,0.8);
-  --shadow-glow: 0 0 30px rgba(212,175,55,0.08);
+  /* ── Radii — clean modern ────────────── */
+  --radius: 4px;
+  --radius-sm: 3px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ── Shadows ─────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(23, 26, 33, 0.04);
+  --shadow-md: 0 4px 12px rgba(23, 26, 33, 0.06);
+  --shadow-lg: 0 8px 24px rgba(23, 26, 33, 0.08);
+  --shadow-glow: 0 0 30px rgba(201, 162, 77, 0.1);
 
   /* ── Typography ──────────────────────── */
   --font-heading: 'EB Garamond', serif;
@@ -61,7 +95,7 @@
   --font-label: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --letter-spacing-heading: 0.02em;
-  --letter-spacing-nav: 0.08em;
+  --letter-spacing-nav: 0.06em;
   --letter-spacing-label: 0.04em;
 
   /* ── Motion ──────────────────────────── */
@@ -70,13 +104,13 @@
   --duration-normal: 250ms;
   --duration-slow: 400ms;
 
-  /* ── Spacing — Golden Ratio (8 × φⁿ) ── */
+  /* ── Spacing ─────────────────────────── */
   --space-1: 8px;
-  --space-2: 13px;
-  --space-3: 21px;
-  --space-4: 34px;
-  --space-5: 55px;
-  --space-6: 89px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -97,17 +131,12 @@ h1, h2, h3, h4 {
   line-height: 1.3;
 }
 
-/* ── Etched surfaces (replaces glass/floating) ── */
-.etched-surface {
+/* ── Card surface ──────────────────── */
+.card {
   background: var(--surface);
-  box-shadow: var(--shadow-etched);
   border: 1px solid var(--border);
-}
-
-.etched-inset {
-  background: var(--surface-inset);
-  box-shadow: inset 0 1px 3px rgba(28,28,25,0.1);
-  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ── Hairline separators ───────────── */
@@ -115,20 +144,20 @@ h1, h2, h3, h4 {
 .hairline-right { border-right: 0.5px solid var(--border); }
 .hairline-top { border-top: 0.5px solid var(--border); }
 
-/* ── Stone hover effect ────────────── */
+/* ── Hover effect ──────────────────── */
 .stone-hover {
   transition: background var(--duration-fast) var(--ease-out);
 }
-.stone-hover:hover { background: rgba(28, 28, 25, 0.03); }
+.stone-hover:hover { background: rgba(23, 26, 33, 0.03); }
 
-/* ── Bronze accent border ──────────── */
-.bronze-border { border: 1px solid rgba(212, 207, 196, 0.8); }
+/* ── Gold accent border ────────────── */
+.gold-border { border: 1px solid var(--border-accent); }
 
 /* ── Scrollbar ─────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #D4CFC4; }
-::-webkit-scrollbar-thumb:hover { background: #BFB9AC; }
+::-webkit-scrollbar-thumb { background: #D4CDBC; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #BFB7A6; }
 
 /* ── Stat card ─────────────────────── */
 .stat-value {
@@ -160,24 +189,31 @@ h1, h2, h3, h4 {
   font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
-  transition: background var(--duration-fast) var(--ease-out);
+  border-radius: var(--radius);
+  transition: all var(--duration-fast) var(--ease-out);
 }
-.btn:hover { background: rgba(28, 28, 25, 0.03); }
+.btn:hover { background: rgba(23, 26, 33, 0.04); }
 .btn-primary {
-  background: var(--accent-bright);
-  color: var(--foreground);
+  background: var(--accent);
+  color: #FFFFFF;
   border-color: var(--accent);
 }
-.btn-primary:hover { background: #C8A32E; }
-.btn-ghost { border: none; background: transparent; }
-.btn-ghost:hover { background: rgba(28, 28, 25, 0.03); }
-
-/* ── Card ───────────────────────────── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-etched);
+.btn-primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); }
+.btn-gold {
+  background: var(--gold);
+  color: #FFFFFF;
+  border-color: var(--gold);
 }
+.btn-gold:hover { background: var(--gold-bright); border-color: var(--gold-bright); }
+.btn-ghost { border: none; background: transparent; }
+.btn-ghost:hover { background: rgba(23, 26, 33, 0.04); }
+.btn-danger {
+  border-color: var(--error);
+  color: var(--error);
+}
+.btn-danger:hover { background: rgba(139, 32, 32, 0.06); }
+.btn-sm { padding: 4px 10px; font-size: 13px; }
+.btn-lg { padding: 12px 24px; font-size: 16px; }
 
 /* ── Input ──────────────────────────── */
 input, textarea, select {
@@ -186,14 +222,14 @@ input, textarea, select {
   padding: 9px 12px;
   border: 1px solid var(--border);
   background: var(--surface-inset);
-  box-shadow: inset 0 1px 3px rgba(28,28,25,0.08);
   color: var(--foreground);
   outline: none;
+  border-radius: var(--radius);
   width: 100%;
 }
 input:focus, textarea:focus, select:focus {
-  border-color: var(--accent-bright);
-  box-shadow: inset 0 1px 3px rgba(28,28,25,0.08), 0 0 0 1px var(--accent-subtle);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
 }
 
 /* ── Table ──────────────────────────── */
@@ -215,19 +251,21 @@ input:focus, textarea:focus, select:focus {
   border-bottom: 0.5px solid var(--border-light);
 }
 .table tr:last-child td { border-bottom: none; }
-.table tr:hover td { background: rgba(28, 28, 25, 0.02); }
+.table tr:hover td { background: rgba(23, 26, 33, 0.02); }
 
 /* ── Badge / Chip ───────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  gap: 6px;
+  padding: 2px 10px;
   font-size: 11px;
   font-weight: 600;
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.02em;
   border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
 /* ── Status dot ─────────────────────── */
@@ -235,6 +273,7 @@ input:focus, textarea:focus, select:focus {
   display: inline-block;
   width: 7px;
   height: 7px;
+  border-radius: 50%;
   margin-right: 6px;
 }
 
@@ -244,6 +283,7 @@ input:focus, textarea:focus, select:focus {
 .page-enter { animation: pageIn 0.35s var(--ease-out); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -253,8 +293,8 @@ input:focus, textarea:focus, select:focus {
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 4px var(--accent-bright); }
-  50% { box-shadow: 0 0 12px var(--accent-bright); }
+  0%, 100% { box-shadow: 0 0 4px var(--gold); }
+  50% { box-shadow: 0 0 12px var(--gold); }
 }
 @keyframes shimmer {
   0% { background-position: -200% 0; }
@@ -270,24 +310,10 @@ input:focus, textarea:focus, select:focus {
 
 /* ── Text gradient ──────────────────── */
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+  background: linear-gradient(135deg, var(--accent), var(--gold));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-/* ── Ambient background ─────────────── */
-.ambient-bg { position: relative; }
-.ambient-bg::before {
-  content: '';
-  position: absolute;
-  top: -40%;
-  left: -20%;
-  width: 140%;
-  height: 80%;
-  background: radial-gradient(ellipse at 50% 50%, var(--accent-subtle), transparent 70%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* ── Live indicator ─────────────────── */
@@ -295,16 +321,19 @@ input:focus, textarea:focus, select:focus {
   display: inline-block;
   width: 7px;
   height: 7px;
+  border-radius: 50%;
   background: var(--success);
   animation: glowPulse 2s infinite;
 }
 
-/* ── Layout ─────────────────────────── */
+/* ═══════ LAYOUT ════════════════════════ */
+
 .sidebar {
-  width: 240px;
+  width: 250px;
   min-height: 100vh;
-  background: var(--background);
-  border-right: 0.5px solid var(--border);
+  height: 100vh;
+  background: #0F1722;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   position: fixed;
   left: 0;
   top: 0;
@@ -312,14 +341,22 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   z-index: 40;
   transition: width 0.3s var(--ease-out);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: thin;
 }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 .sidebar.collapsed { width: 64px; }
 .sidebar.collapsed .nav-label { display: none; }
 .sidebar.collapsed .section-label { display: none; }
 .sidebar.collapsed .logo-text { display: none; }
+.sidebar.collapsed .sidebar-user-area { display: none; }
+.sidebar.collapsed .sidebar-footer-text { display: none; }
 
 .main-area {
-  margin-left: 240px;
+  margin-left: 250px;
   min-height: 100vh;
   transition: margin-left 0.3s var(--ease-out);
 }
@@ -339,8 +376,8 @@ input:focus, textarea:focus, select:focus {
 }
 
 .page-content {
-  padding: 64px;
-  max-width: 1280px;
+  padding: 32px;
+  max-width: 1400px;
 }
 
 /* ── Density overrides ──────────────── */
@@ -350,7 +387,7 @@ input:focus, textarea:focus, select:focus {
 }
 [data-density="dense"] .page-content {
   padding: 24px;
-  max-width: 1400px;
+  max-width: 1600px;
 }
 [data-density="dense"] .card { padding: 12px; }
 [data-density="dense"] table td { padding: 8px; font-size: 13px; }
@@ -359,6 +396,226 @@ input:focus, textarea:focus, select:focus {
 [data-motion="false"] * {
   animation-duration: 0s !important;
   transition-duration: 0s !important;
+}
+
+/* ── Phoenix glow (subtle celestial purple) ── */
+.phoenix-glow {
+  box-shadow: 0 0 20px rgba(123, 94, 167, 0.08);
+}
+
+/* ═══════ VISUAL POLISH ═══════════════════ */
+
+/* ── Glass frosted effect ────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+.glass-dark {
+  background: rgba(15, 23, 34, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Glow effects ────────────────────── */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(18, 60, 105, 0.12);
+  transition: box-shadow var(--duration-normal) var(--ease-out);
+}
+.glow-accent:hover {
+  box-shadow: 0 0 30px rgba(18, 60, 105, 0.2);
+}
+.glow-gold {
+  box-shadow: 0 0 20px rgba(201, 162, 77, 0.12);
+  transition: box-shadow var(--duration-normal) var(--ease-out);
+}
+.glow-gold:hover {
+  box-shadow: 0 0 30px rgba(201, 162, 77, 0.22);
+}
+
+/* ── Enhanced card surface ───────────── */
+.card-elevated {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+.card-elevated:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.card-interactive {
+  transition: all var(--duration-normal) var(--ease-out);
+  cursor: pointer;
+}
+.card-interactive:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ── Interactive element transitions ─── */
+a, button, .clickable {
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+/* ── Section styling ─────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+.section-header h2 {
+  font-size: 18px;
+  font-weight: 500;
+  font-family: var(--font-heading);
+  letter-spacing: var(--letter-spacing-heading);
+  color: var(--foreground);
+}
+.section-header-glow {
+  background: linear-gradient(90deg, var(--gold-subtle) 0%, transparent 60%);
+  padding: 12px 16px;
+  margin: 0 -16px 16px -16px;
+  border-radius: var(--radius);
+}
+
+/* ── Corner decoration ───────────────── */
+.corner-decor {
+  position: relative;
+}
+.corner-decor::before,
+.corner-decor::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--gold);
+  opacity: 0.15;
+  pointer-events: none;
+}
+.corner-decor::before {
+  top: 0;
+  left: 0;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+.corner-decor::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+/* ── Divider with gold texture ────────── */
+.gold-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.3;
+  margin: 24px 0;
+  border: none;
+}
+.gold-divider-thin {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-accent), transparent);
+  margin: 20px 0;
+  border: none;
+}
+
+/* ── Scale-in animation ───────────────── */
+.scale-in { animation: scaleIn 0.35s var(--ease-out); }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Enhanced fade-in ─────────────────── */
+.fade-in-up {
+  animation: fadeInUp 0.4s var(--ease-out);
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Staggered animation support ──────── */
+.stagger > * {
+  opacity: 0;
+  animation: fadeInUp 0.4s var(--ease-out) forwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+
+/* ── Subtle pulse for live indicators ─── */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ── Decorative top gradient bar ──────── */
+.top-gradient-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold), var(--accent));
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* ── Welcome banner ───────────────────── */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-bright) 100%);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+}
+.welcome-banner::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(201, 162, 77, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.welcome-banner h1 {
+  font-size: 22px;
+  font-weight: 500;
+  font-family: var(--font-heading);
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.welcome-banner p {
+  font-size: 14px;
+  opacity: 0.8;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── KPI grid enhancement ──────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
 /* ── Responsive ─────────────────────── */
@@ -371,4 +628,5 @@ input:focus, textarea:focus, select:focus {
   .sidebar.open { transform: translateX(0); }
   .main-area { margin-left: 0; }
   .page-content { padding: 24px; }
+  .topbar button[aria-label="Toggle menu"] { display: flex !important; }
 }

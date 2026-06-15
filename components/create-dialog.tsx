@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode, type FormEvent } from 'react';
+import { useState, useEffect, type ReactNode, type FormEvent } from 'react';
 import { X, Loader2 } from 'lucide-react';
 
 interface Field {
@@ -29,6 +29,19 @@ export function CreateDialog({ open, onClose, title, fields, onSubmit, submittin
     fields.forEach(f => { init[f.name] = f.defaultValue || ''; });
     return init;
   });
+
+  // Re-seed form state from field defaults whenever the dialog opens or the
+  // field set changes (e.g. switching between "New" and "Edit" modes). Without
+  // this, the lazy useState initializer only runs on first mount and the Edit
+  // dialog shows blank/stale values.
+  const defaultsKey = fields.map(f => `${f.name}=${f.defaultValue ?? ''}`).join('|');
+  useEffect(() => {
+    if (!open) return;
+    const init: Record<string, string> = {};
+    fields.forEach(f => { init[f.name] = f.defaultValue || ''; });
+    setValues(init);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultsKey]);
 
   if (!open) return null;
 

@@ -49,6 +49,17 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
+      {/* Data source notice */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+        padding: '8px 14px', borderRadius: 6,
+        background: 'rgba(18,60,105,0.04)', border: '1px solid var(--border-light)',
+        fontSize: 12, color: 'var(--foreground-secondary)',
+      }}>
+        <BarChart3 size={14} color="var(--accent)" />
+        All numbers are computed from real database rows — messages, campaigns, tasks, and agent activity in your org.
+      </div>
+
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
         {isLoading ? (
@@ -60,33 +71,39 @@ export default function AnalyticsPage() {
               </div>
             ))}
           </>
-        ) : (
+        ) : metrics ? (
           <>
             <div className="etched-surface" style={{ padding: 16 }}>
               <div className="stat-label">Conversion Rate</div>
               <div className="stat-value" style={{ color: 'var(--accent)' }}>
-                {metrics ? `${(metrics.conversion_rate).toFixed(1)}%` : '—'}
+                {`${(metrics.conversion_rate).toFixed(1)}%`}
               </div>
+              <div className="stat-sublabel">Total leads: {metrics.total_leads}</div>
             </div>
             <div className="etched-surface" style={{ padding: 16 }}>
               <div className="stat-label">New Leads Today</div>
               <div className="stat-value" style={{ color: '#3b82f6' }}>
-                {metrics?.new_leads_today ?? '—'}
+                {metrics.new_leads_today}
               </div>
             </div>
             <div className="etched-surface" style={{ padding: 16 }}>
               <div className="stat-label">Revenue Today</div>
               <div className="stat-value" style={{ color: '#22c55e' }}>
-                {metrics?.revenue_today != null ? formatCurrency(metrics.revenue_today) : '—'}
+                {formatCurrency(metrics.revenue_today)}
               </div>
             </div>
             <div className="etched-surface" style={{ padding: 16 }}>
               <div className="stat-label">Messages Today</div>
               <div className="stat-value" style={{ color: '#f59e0b' }}>
-                {metrics?.messages_today ?? '—'}
+                {metrics.messages_today}
               </div>
+              <div className="stat-sublabel">Outbound only (excl. agent chat)</div>
             </div>
           </>
+        ) : (
+          <div className="etched-surface" style={{ padding: 16, gridColumn: '1 / -1', textAlign: 'center' }}>
+            <div className="stat-value" style={{ color: 'var(--muted)' }}>No data</div>
+          </div>
         )}
       </div>
 

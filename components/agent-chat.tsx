@@ -1,27 +1,37 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, createElement } from 'react';
-import { Bot, Brain, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare, User, Radio, Plus } from 'lucide-react';
-import { PHILOSOPHERS } from '@/lib/design-tokens';
-import type { PhilosopherKey } from '@/lib/design-tokens';
+import { Bot, Brain, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare, Gavel, Swords, Compass, User, Radio, Plus, History, X, MessageCircle } from 'lucide-react';
+import { PHILOSOPHERS, GODS } from '@/lib/design-tokens';
 import { useModeStore } from '@/lib/mode-store';
 import { AIInputWithFile } from '@/components/ui/ai-input-with-file';
+import AgentPortrait from '@/components/ui/agent-portrait';
+import { AgentSelect } from '@/components/ui/agent-select';
+import { listAgentConversations, getAgentConversationMessages } from '@/lib/api-client';
 
-const ICON_MAP = { Brain, Bot, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare } as const;
+const ICON_MAP = { Brain, Bot, BookOpen, Shield, Search, BarChart3, Wallet, ShieldCheck, Wrench, MessageSquare, Gavel, Swords, Compass } as const;
 
 type Agent = {
-  name: PhilosopherKey;
+  name: string;
   icon: typeof Bot;
   color: string;
   role: string;
 };
 
-const AGENTS: Agent[] = Object.entries(PHILOSOPHERS).map(([key, p]) => ({
-  name: key as PhilosopherKey,
-  role: p.role,
-  icon: ICON_MAP[p.icon as keyof typeof ICON_MAP],
-  color: p.color,
-}));
+const AGENTS: Agent[] = [
+  ...Object.entries(PHILOSOPHERS).map(([key, p]) => ({
+    name: key,
+    role: p.role,
+    icon: ICON_MAP[p.icon as keyof typeof ICON_MAP] || Bot,
+    color: p.color,
+  })),
+  ...Object.entries(GODS).map(([key, g]) => ({
+    name: key,
+    role: g.role,
+    icon: Bot,
+    color: g.color,
+  })),
+];
 
 type Message = {
   role: 'user' | 'agent';
@@ -60,6 +70,9 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
   const [isLoading, setIsLoading] = useState(false);
   const [streamMode, setStreamMode] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +94,43 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
       return next;
     });
   }, []);
+
+  // Load conversation history list
+  const loadConversations = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await listAgentConversations({ limit: 50 });
+      setConversations(data.items || []);
+    } catch {
+      // silent
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
+  const resumeConversation = useCallback(async (convId: string, agentName: string) => {
+    try {
+      const history = await getAgentConversationMessages(convId);
+      const agent = AGENTS.find(a => a.name === agentName) || AGENTS[0];
+      setSelectedAgent(agent);
+      rememberConvId(agentName, convId);
+      if (history.items.length > 0) {
+        setHistories(prev => ({
+          ...prev,
+          [agentName]: history.items.map((m: any) => ({
+            role: m.role === 'assistant' ? 'agent' as const : 'user' as const,
+            content: m.content,
+            agent: m.agent || agentName,
+            timestamp: m.created_at ? new Date(m.created_at) : new Date(),
+          })),
+        }));
+      }
+      setLoadedAgents(prev => ({ ...prev, [agentName]: true }));
+      setShowHistory(false);
+    } catch {
+      // silent
+    }
+  }, [rememberConvId]);
 
   // Load persisted history when an agent is first viewed
   useEffect(() => {
@@ -137,15 +187,11 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
     }
     setSelectedAgent(agent);
     // Selecting an agent is a mode switch — keep the whole OS in that mode
-    setMode(agent.name);
+    setMode(agent.name as any);
   }, [isStreaming, setMode]);
 
-  // Mode → agent: switching philosopher mode anywhere auto-switches the chat agent
-  useEffect(() => {
-    if (currentMode === selectedAgent.name) return;
-    const agent = AGENTS.find(a => a.name === currentMode);
-    if (agent) switchAgent(agent);
-  }, [currentMode, selectedAgent.name, switchAgent]);
+  // Mode → agent sync is disabled (ModePicker removed). Agent is selected
+  // via URL param or the dropdown — never auto-override.
 
   const stopStream = () => {
     abortRef.current?.abort();
@@ -294,51 +340,74 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
             Talk to any agent in the Philosopher Council — conversations are saved
           </p>
         </div>
-        <button className="btn btn-ghost" onClick={newConversation} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-          <Plus size={14} /> New Conversation
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={() => { setShowHistory(true); loadConversations(); }} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <History size={14} /> History
+          </button>
+          <button className="btn btn-ghost" onClick={newConversation} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <Plus size={14} /> New
+          </button>
+        </div>
       </div>
 
+      {/* Conversation History Panel */}
+      {showHistory && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setShowHistory(false)}>
+          <div className="card" style={{ width: 380, maxWidth: '90vw', height: '100vh', overflowY: 'auto', borderRadius: 0, padding: 24 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0 }}>Conversation History</h2>
+              <button className="btn btn-ghost" onClick={() => setShowHistory(false)} style={{ padding: 6 }}><X size={18} /></button>
+            </div>
+            {loadingHistory ? (
+              <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 40 }}>Loading...</p>
+            ) : conversations.length === 0 ? (
+              <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 40 }}>No saved conversations yet. Start chatting and they'll appear here.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {conversations.map((conv: any) => {
+                  const agentName = conv.agent || 'plato';
+                  const agent = AGENTS.find(a => a.name === agentName);
+                  return (
+                    <button key={conv.id} onClick={() => resumeConversation(conv.id, agentName)} style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                      border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer',
+                      width: '100%', textAlign: 'left', background: 'var(--surface)',
+                    }}>
+                      <AgentPortrait agentName={agentName} size={36} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, textTransform: 'capitalize' }}>{agentName}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {conv.last_message?.slice(0, 60) || 'No messages'}
+                        </div>
+                      </div>
+                      <MessageCircle size={16} color="var(--muted)" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
-        {/* Agent selector sidebar */}
-        <div style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
-          {AGENTS.map(agent => {
-            const Icon = agent.icon;
-            const isActive = agent.name === selectedAgent.name;
-            return (
-              <button
-                key={agent.name}
-                onClick={() => switchAgent(agent)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-                  border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: isActive ? 600 : 400, textAlign: 'left',
-                  background: isActive ? `${agent.color}12` : 'transparent',
-                  color: isActive ? agent.color : 'var(--foreground-secondary)',
-                  transition: 'all 0.15s ease', width: '100%',
-                }}
-              >
-                <Icon size={16} color={isActive ? agent.color : 'var(--muted)'} />
-                <span style={{ textTransform: 'capitalize' }}>{agent.name}</span>
-              </button>
-            );
-          })}
+        {/* Agent selector — searchable dropdown */}
+        <div style={{ width: 260, flexShrink: 0 }}>
+          <AgentSelect
+            agents={AGENTS as any}
+            selected={selectedAgent as any}
+            onSelect={switchAgent as any}
+          />
         </div>
 
         {/* Main chat area */}
         <div className="etched-surface" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Agent header */}
+          {/* Agent header with portrait */}
           <div style={{
             padding: '12px 16px', borderBottom: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', gap: 10,
           }}>
-            <div style={{
-              width: 32, height: 32, display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              background: `${selectedAgent.color}15`,
-            }}>
-              <selectedAgent.icon size={16} color={selectedAgent.color} />
-            </div>
+            <AgentPortrait agentName={selectedAgent.name} size={36} />
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, textTransform: 'capitalize' }}>{selectedAgent.name}</div>
               <div style={{ fontSize: 11, color: 'var(--muted)' }}>{selectedAgent.role}</div>

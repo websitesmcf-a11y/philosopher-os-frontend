@@ -48,7 +48,10 @@ type RequestOptions = {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, params, headers = {}, signal } = opts;
 
-  let url = `${API_BASE}${path}`;
+  // Add trailing slash so FastAPI routes match (backends use "/" paths).
+  // The browser's fetch follows any 307 redirects preserving method + body.
+  const trailing = path.includes('?') ? '' : path.endsWith('/') ? '' : '/';
+  let url = `${API_BASE}${path}${trailing}`;
   if (params) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -111,7 +114,8 @@ export interface Client {
 
 export interface Conversation {
   id: string; org_id: string; lead_id?: string; client_id?: string;
-  channel: string; status: string; last_message_at?: string; created_at?: string;
+  channel: string; status: string; extra_metadata?: Record<string, string>;
+  last_message?: string; last_message_at?: string; created_at?: string;
 }
 
 export interface Campaign {
@@ -166,6 +170,10 @@ export async function getCurrentUser() {
   return request<{ id: string; email: string; name: string; role: string }>('/auth/me');
 }
 
+export async function updateUser(id: string, data: { name?: string; avatar_url?: string; timezone?: string }): Promise<{ id: string; email: string; name: string; role: string; avatar_url?: string; timezone?: string }> {
+  return request(`/users/${id}`, { method: 'PATCH', body: data });
+}
+
 // ─── Dashboard ───────────────────────────────────────
 
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
@@ -210,7 +218,7 @@ export async function getActivity(limit = 15): Promise<{ items: ActivityEvent[] 
 
 export async function listLeads(params?: {
   page?: number; page_size?: number; status?: string; source?: string;
-  industry?: string; search?: string;
+  industry?: string; search?: string; list_id?: string;
 }): Promise<{ items: Lead[]; total: number; page: number; page_size: number }> {
   return request('/leads', { params: params as Record<string, string | number | undefined> });
 }
@@ -225,6 +233,49 @@ export async function updateLead(id: string, data: Partial<Lead>): Promise<Lead>
 
 export async function deleteLead(id: string): Promise<void> {
   return request(`/leads/${id}`, { method: 'DELETE' });
+}
+
+// ─── Lead Lists ──────────────────────────────────────
+
+export interface LeadList {
+  id: string;
+  org_id: string;
+  name: string;
+  description?: string;
+  created_by?: string;
+  lead_count: number;
+  is_archived: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function listLeadLists(): Promise<{ items: LeadList[]; total: number }> {
+  return request('/lead-lists');
+}
+
+export async function createLeadList(data: { name: string; description?: string }): Promise<LeadList> {
+  return request('/lead-lists', { method: 'POST', body: data });
+}
+
+export async function getLeadList(id: string): Promise<LeadList & { leads: Lead[] }> {
+  return request(`/lead-lists/${id}`);
+}
+
+export async function deleteLeadList(id: string): Promise<{ deleted: boolean }> {
+  return request(`/lead-lists/${id}`, { method: 'DELETE' });
+}
+
+export async function addLeadsToList(listId: string, leadIds: string[]): Promise<{ added: number }> {
+  return request(`/lead-lists/${listId}/leads`, { method: 'POST', body: { lead_ids: leadIds } });
+}
+
+export async function removeLeadFromList(listId: string, leadId: string): Promise<{ removed: boolean }> {
+  return request(`/lead-lists/${listId}/leads/${leadId}`, { method: 'DELETE' });
+}
+
+// Mark leads in a list as reserved by a campaign — locks them from the general pool
+export async function reserveLeadList(listId: string, campaignId: string): Promise<{ reserved: number }> {
+  return request(`/lead-lists/${listId}/reserve`, { method: 'POST', body: { campaign_id: campaignId } });
 }
 
 // ─── Clients ─────────────────────────────────────────
@@ -253,6 +304,10 @@ export async function createCampaign(data: Partial<Campaign>): Promise<Campaign>
 
 export async function launchCampaign(id: string): Promise<{ launched: boolean }> {
   return request(`/campaigns/${id}/launch`, { method: 'POST' });
+}
+
+export async function addCampaignLeads(id: string, leadIds: string[]): Promise<{ added: number; campaign_id: string; target_count: number }> {
+  return request(`/campaigns/${id}/leads`, { method: 'POST', body: { lead_ids: leadIds } });
 }
 
 export async function pauseCampaign(id: string): Promise<{ paused: boolean }> {
@@ -289,6 +344,17 @@ export async function getInvoices(params?: { page?: number; page_size?: number }
 
 export async function getCashflow(): Promise<{ total_revenue: number; total_expenses: number; net_cashflow: number }> {
   return request('/finance/cashflow');
+}
+
+export async function createInvoice(data: {
+  client_id?: string;
+  client_name?: string;
+  amount: number;
+  description?: string;
+  status?: InvoiceStatus;
+  due_date?: string;
+}): Promise<Invoice> {
+  return request('/finance/invoices', { method: 'POST', body: data });
 }
 
 export function formatCurrency(amount: number): string {
@@ -453,6 +519,19 @@ export async function deleteKnowledge(id: string): Promise<{ deleted: boolean }>
   return request(`/knowledge/${id}`, { method: 'DELETE' });
 }
 
+export async function uploadKnowledgeFile(file: File, title?: string, category?: string): Promise<{ id: string; title: string; message: string; content_length: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (title) formData.append('title', title);
+  if (category) formData.append('category', category);
+  const res = await fetch(`${API_BASE}/knowledge/upload`, { method: 'POST', body: formData });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new Error(err.detail || 'Upload failed');
+  }
+  return res.json();
+}
+
 // ─── Supabase Realtime Hooks ─────────────────────────
 
 export function subscribeToTable(
@@ -540,4 +619,75 @@ export async function deleteConnection(
   provider: string
 ): Promise<{ provider: string; status: string }> {
   return request(`/connections/${provider}`, { method: 'DELETE' });
+}
+
+// ─── CRM Cleanup ──────────────────────────────────────────
+
+export interface DuplicateLead {
+  id: string; name: string; phone?: string | null; email?: string | null;
+  company?: string | null; status: string; completeness: number;
+}
+
+export interface DuplicateGroup {
+  match_type: string; match_value: string; count: number; leads: DuplicateLead[];
+}
+
+export interface DuplicatesResult {
+  total_leads: number; duplicate_groups: number; duplicate_records: number;
+  groups: DuplicateGroup[];
+}
+
+export interface MergeResult {
+  merged: number; groups_merged: number; remaining_leads: number;
+}
+
+export interface AuditResult {
+  total_leads: number; missing_phone: number; missing_email: number;
+  missing_company: number; no_contact_method: number; duplicate_records: number;
+  leads_with_issues: number; health_score: number;
+}
+
+export interface CampaignFix {
+  id: string; name: string; from: string; to: string; reason: string;
+}
+
+export interface FixCampaignsResult {
+  total_campaigns: number; fixed: number; fixes: CampaignFix[];
+}
+
+export async function findDuplicateLeads(): Promise<DuplicatesResult> {
+  return request('/cleanup/duplicates');
+}
+
+export async function mergeDuplicateLeads(): Promise<MergeResult> {
+  return request('/cleanup/merge-duplicates', { method: 'POST' });
+}
+
+export async function auditDataQuality(): Promise<AuditResult> {
+  return request('/cleanup/audit');
+}
+
+export async function fixCampaignStatuses(): Promise<FixCampaignsResult> {
+  return request('/cleanup/fix-campaigns', { method: 'POST' });
+}
+
+// ─── Beast Mode ───────────────────────────────────────────
+export async function planBeastMission(objective: string, agents: string[], mode: string): Promise<any> {
+  return request('/beast-mode/plan', { method: 'POST', body: { objective, agents, mode } });
+}
+
+export async function executeBeastMission(objective: string, agents: string[], mode: string): Promise<any> {
+  return request('/beast-mode/execute', { method: 'POST', body: { objective, agents, mode } });
+}
+
+export async function getBeastStatus() {
+  return request('/beast-mode/status');
+}
+
+export async function controlBeastMission(missionId: string, action: string) {
+  return request(`/beast-mode/${missionId}/${action}`, { method: 'POST' });
+}
+
+export async function getBeastMission(missionId: string) {
+  return request(`/beast-mode/${missionId}`);
 }
