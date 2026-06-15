@@ -13,6 +13,7 @@ interface IntegrationCardProps {
   onConfigure?: () => void;
   onDisconnect?: () => void;
   features?: string[];
+  connectedBy?: string; // Who connected this integration
 }
 
 const STATUS_CONFIG = {
@@ -57,6 +58,7 @@ export function IntegrationCard({
   onConfigure,
   onDisconnect,
   features,
+  connectedBy,
 }: IntegrationCardProps) {
   const config = STATUS_CONFIG[status];
   const StatusIcon = config.icon;
@@ -127,10 +129,20 @@ export function IntegrationCard({
         </div>
       )}
 
-      {/* Last sync */}
-      {lastSync && (
-        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
-          Last synced: {lastSync}
+      {/* Connected by */}
+      {connectedBy && (
+        <div style={{
+          fontSize: 11, color: 'var(--muted)',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          <span style={{
+            display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
+            background: status === 'connected' ? '#16A34A' : '#6B7280',
+          }} />
+          Connected by <strong>{connectedBy}</strong>
+          <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)' }}>
+            {lastSync ? `Last sync: ${lastSync}` : ''}
+          </span>
         </div>
       )}
 

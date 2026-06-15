@@ -164,6 +164,17 @@ export default function ConnectionsPage() {
     status: (liveStatuses[i.provider] || i.status) as 'connected' | 'disconnected' | 'error' | 'setup_required',
   }));
 
+  // Get current user name for display
+  const currentUserName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null;
+
+  // Track which integrations the CURRENT user connected vs someone else
+  const [myIntegrations, setMyIntegrations] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem('my_connections');
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+
   const connectedCount = mergedIntegrations.filter(i => i.status === 'connected').length;
 
   const handleConnect = (provider: string) => {
@@ -183,6 +194,12 @@ export default function ConnectionsPage() {
   // optimistically mark the provider connected.
   const handleConnected = (provider: string) => {
     setLiveStatuses(prev => ({ ...prev, [provider]: 'connected' }));
+    // Track that THIS user connected this integration
+    setMyIntegrations(prev => {
+      const next = { ...prev, [provider]: true };
+      try { localStorage.setItem('my_connections', JSON.stringify(next)); } catch {}
+      return next;
+    });
     toast.success(`${provider} connected`);
     fetchLive();
   };
@@ -231,6 +248,7 @@ export default function ConnectionsPage() {
             provider={integration.provider}
             lastSync={integration.lastSync}
             features={integration.features}
+            connectedBy={integration.status === 'connected' ? (myIntegrations[integration.provider] ? (currentUserName || 'You') : 'Admin') : undefined}
             onConnect={integration.status === 'disconnected' ? () => handleConnect(integration.provider) : undefined}
             onConfigure={integration.status === 'disconnected' ? () => handleConfigure(integration.provider) : undefined}
             onDisconnect={integration.status === 'connected' ? () => handleDisconnect(integration.provider) : undefined}
