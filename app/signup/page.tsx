@@ -1,21 +1,41 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle, ArrowRight } from 'lucide-react';
 import { PALETTE } from '@/lib/design-tokens';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams?.get('invite');
+  const inviteRole = searchParams?.get('role');
+
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{ role: string; email?: string } | null>(null);
+
+  // Validate invite token on mount
+  useEffect(() => {
+    if (inviteToken) {
+      fetch(`${API_BASE}/auth/invite/${inviteToken}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.valid) {
+            setInviteInfo({ role: data.role, email: data.email });
+            if (data.email) setEmail(data.email);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +52,15 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      // Step 1: Sign up
+      // Step 1: Sign up (with optional invite token)
+      const body: any = { email, password, name: displayName || undefined };
+      if (inviteToken) body.invite_token = inviteToken;
+      if (inviteRole) body.invite_role = inviteRole;
+
       const signupRes = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          name: displayName || undefined,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!signupRes.ok) {
@@ -115,6 +135,16 @@ export default function SignupPage() {
           }}>
             Create Account
           </h1>
+          {inviteInfo && (
+            <div style={{
+              marginTop: 16, padding: '10px 14px', borderRadius: 8,
+              background: 'rgba(201,162,77,0.1)', border: '1px solid rgba(201,162,77,0.2)',
+              display: 'flex', alignItems: 'center', gap: 8, fontSize: 13,
+            }}>
+              <CheckCircle size={16} color="#C9A24D" />
+              <span>You've been invited as <strong style={{ textTransform: 'capitalize' }}>{inviteInfo.role}</strong></span>
+            </div>
+          )}
           <p style={{
             fontSize: 13, color: 'var(--foreground-secondary)',
             marginTop: 8,
