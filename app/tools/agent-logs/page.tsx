@@ -32,7 +32,7 @@ interface LogEntry {
 
 // ── Constants ────────────────────────────────────────
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://web-production-a93f0.up.railway.app/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://jet-obligate-desktop.ngrok-free.dev/api/v1';
 
 const STATUS_COLORS: Record<string, string> = {
   connected: '#94a3b8',

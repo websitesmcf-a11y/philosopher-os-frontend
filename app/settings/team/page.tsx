@@ -286,7 +286,7 @@ export default function TeamSettingsPage() {
     try {
       // Fetch from API
       const token = localStorage.getItem('auth_token');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://web-production-a93f0.up.railway.app/api/v1';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://jet-obligate-desktop.ngrok-free.dev/api/v1';
 
       let apiMembers: TeamMember[] = [];
       try {

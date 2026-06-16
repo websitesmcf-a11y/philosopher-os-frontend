@@ -99,7 +99,7 @@ function ToggleSwitch({ checked, onChange, id }: { checked: boolean; onChange: (
   );
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jet-obligate-desktop.ngrok-free.dev/api/v1';
 
 export default function SecuritySettingsPage() {
   const [loaded, setLoaded] = useState(false);
