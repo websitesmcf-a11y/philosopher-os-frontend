@@ -129,17 +129,16 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     instructions: [
       { text: 'Step 1 — Install the browser-harness CLI from the hermes-agent repo:' },
       { code: true, text: 'git clone https://github.com/websitesmcf-a11y/hermes-agent.git\ncd hermes-agent\npython -m pip install -e ./browser-harness\n# Verify: browser-harness --version' },
-      { text: 'Step 2 — Start Chrome with remote debugging. Close all Chrome windows, then run in PowerShell:' },
-      { code: true, text: '& "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222' },
-      { text: '(Or in cmd.exe: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222)' },
-      { text: 'Step 3 — Download the Philosopher OS harness agent:' },
+      { text: 'Step 2 — Download the Philosopher OS harness agent:' },
       { code: true, text: 'curl -o philosopher-harness.py https://web-production-a93f0.up.railway.app/api/v1/browser-harness/agent-script' },
-      { text: 'Step 4 — Save below to generate a token, then run the command that appears:' },
+      { text: 'Step 3 — Save below to generate a token, then run the command that appears:' },
+      { text: 'Step 4 (optional) — Make it auto-start on PC boot:' },
+      { code: true, text: 'python philosopher-harness.py --install --url https://web-production-a93f0.up.railway.app --token YOUR_TOKEN' },
     ],
     fields: [
       { name: 'token', label: 'Token (auto-generated on save)', kind: 'secret', type: 'password' },
     ],
-    note: 'Keep the terminal window open while using Beast Mode Level 3+ (Approved / Full). The agent connects your Chrome so agents can browse the web on your behalf.',
+    note: 'The agent auto-launches Chrome if needed and reconnects instantly on network blips. Use --install for boot persistence. Keep the terminal open in foreground mode.',
   },
   obsidian: {
     image: `${CARD_BASE}/integration-vault.jpg`,
@@ -504,7 +503,10 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
                 {postConnect.runCommand}
               </pre>
               <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>
-                Keep the terminal window open. The agent stays connected via WebSocket and proxies browser commands to your local Chrome.
+                Keep the terminal window open. The agent auto-launches Chrome if needed and reconnects instantly on blips.
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, marginTop: 4 }}>
+                For boot persistence: run <code style={{ background: '#0f172a', padding: '2px 4px', borderRadius: 3, color: '#e2e8f0' }}>python philosopher-harness.py --install --url {BACKEND_ORIGIN} --token YOUR_TOKEN</code>
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
