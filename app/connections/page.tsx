@@ -10,7 +10,7 @@ import { ConnectModal } from '@/components/ui/connect-modal';
 import { toast } from 'sonner';
 import {
   Plug, Database, MapPin, MessageCircle, Mail, Calendar,
-  FileText, Globe, CreditCard, BookOpen
+  FileText, Globe, CreditCard, BookOpen, Monitor
 } from 'lucide-react';
 
 const INTEGRATIONS = [
@@ -96,6 +96,14 @@ const INTEGRATIONS = [
     features: ['Page Messaging', 'Comments', 'Posting', 'Page Insights'],
   },
   {
+    name: 'Browser Harness',
+    description: 'Connect your local Chrome browser — agents can search Google Maps, scrape directories, and access logged-in sites through your computer.',
+    icon: Monitor,
+    provider: 'browser-harness',
+    status: 'disconnected' as const,
+    features: ['Google Maps Search', 'Directory Scraping', 'Logged-in Sites', 'Chrome CDP'],
+  },
+  {
     name: 'Payment / Finance',
     description: 'Track payments, invoices, and financial transactions.',
     icon: CreditCard,
@@ -115,6 +123,7 @@ const BACKEND_TO_UI: Record<string, string> = {
   facebook: 'facebook',
   instagram: 'instagram',
   obsidian: 'obsidian',
+  browser_harness: 'browser-harness',
   'google-maps': 'google-maps',
   'web-scraper': 'web-scraper',
   csv: 'csv',

@@ -121,6 +121,22 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
       { name: 'page_id', label: 'Page ID', kind: 'config', type: 'text', required: true },
     ],
   },
+  'browser-harness': {
+    image: `${CARD_BASE}/integration-browser.jpg`,
+    backendProvider: 'browser_harness',
+    instructions: [
+      { text: 'Install the browser-harness CLI on your computer:' },
+      { code: true, text: 'pip install browser-harness\n# Or: git clone the hermes-agent repo and run:\n# pip install -e hermes-agent/browser-harness' },
+      { text: 'Download the Philosopher OS harness agent:' },
+      { code: true, text: 'curl -o philosopher-harness.py https://web-production-a93f0.up.railway.app/api/v1/browser-harness/agent-script' },
+      { text: 'Save below, then run the agent in your terminal (keep it open):' },
+      { text: 'After saving, a token will appear. Run this command on your computer:' },
+    ],
+    fields: [
+      { name: 'token', label: 'Token (auto-generated on save)', kind: 'secret', type: 'password' },
+    ],
+    note: 'Keep the terminal window open while using Beast Mode Level 3+ (Approved / Full). The agent connects your Chrome so agents can browse the web on your behalf.',
+  },
   obsidian: {
     image: `${CARD_BASE}/integration-vault.jpg`,
     backendProvider: 'obsidian',
@@ -177,6 +193,7 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
   const [error, setError] = useState<string | null>(null);
   const [showWhatsAppTutorial, setShowWhatsAppTutorial] = useState(uiProvider === 'whatsapp');
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [postConnect, setPostConnect] = useState<{ token: string; runCommand: string } | null>(null);
 
   // Seed defaults each time the modal opens for a given provider.
   const fieldsKey = spec ? spec.fields.map(f => `${f.name}=${f.defaultValue ?? ''}`).join('|') : '';
@@ -220,7 +237,15 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
           throw new Error(data?.detail || `Save failed (${resp.status})`);
         }
         if (data?.status && data.status !== 'connected') {
-          // Saved but not yet live (e.g. Google Calendar awaiting OAuth).
+          // For browser-harness, "disconnected" is expected (token saved, no live WS)
+          if (spec.backendProvider === 'browser_harness' && data.token) {
+            setPostConnect({
+              token: data.token,
+              runCommand: `python philosopher-harness.py --url ${window.location.origin} --token ${data.token}`,
+            });
+            setSubmitting(false);
+            return;
+          }
           throw new Error(data.detail || 'Saved, but the connection is not active yet.');
         }
       } else {
@@ -451,8 +476,47 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
           </div>
         )}
 
-        {/* Regular connect form (hidden during WhatsApp tutorial) */}
-        {!showWhatsAppTutorial && (
+        {/* Post-connect token display for Browser Harness */}
+        {postConnect && (
+          <div style={{ padding: 24 }}>
+            <div style={{
+              padding: 16, borderRadius: 10,
+              background: 'rgba(18,60,105,0.06)', border: '1px solid rgba(18,60,105,0.2)',
+              marginBottom: 16,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#123C69', marginBottom: 4 }}>
+                ✅ Token Generated
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--foreground-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
+                Copy and run this command in your computer's terminal to connect your browser:
+              </div>
+              <pre style={{
+                padding: '12px 14px', borderRadius: 8,
+                background: '#0f172a', color: '#e2e8f0',
+                fontFamily: 'var(--font-mono)', fontSize: 12,
+                whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+                marginBottom: 12, userSelect: 'all',
+              }}>
+                {postConnect.runCommand}
+              </pre>
+              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>
+                Keep the terminal window open. The agent stays connected via WebSocket and proxies browser commands to your local Chrome.
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-primary" onClick={() => {
+                setPostConnect(null);
+                onConnected(uiProvider);
+                onClose();
+              }} style={{ padding: '8px 20px', fontSize: 13 }}>
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Regular connect form (hidden during WhatsApp tutorial or post-connect) */}
+        {!showWhatsAppTutorial && !postConnect && (
         <form onSubmit={handleSubmit} style={{ padding: 24, overflowY: 'auto' }}>
           {/* Instructions with styled steps */}
           <div style={{

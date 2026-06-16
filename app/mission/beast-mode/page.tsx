@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Shield, FileText, Play, Square, AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
-import { planBeastMission, executeBeastMission } from '@/lib/api-client';
+import { planBeastMission, executeBeastMission, getBrowserHarnessStatus } from '@/lib/api-client';
 import { ShiningText } from '@/components/ui/shining-text';
 import { Loader, TextDotsLoader } from '@/components/ui/loader';
 import { SmokeBackground } from '@/components/ui/smoke-background';
@@ -97,10 +97,17 @@ export default function BeastModePage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [checkpoints, setCheckpoints] = useState<{label:string;status:'pending'|'running'|'done'|'error';detail?:string}[]>([]);
+  const [harnessConnected, setHarnessConnected] = useState(false);
+  const [harnessChecked, setHarnessChecked] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setLoadProgress(p => Math.min(p + 2, 100)), 100);
     const t = setTimeout(() => setLoading(false), 5000);
+    // Check browser harness status
+    getBrowserHarnessStatus().then(s => {
+      setHarnessConnected(s.connected);
+      setHarnessChecked(true);
+    }).catch(() => setHarnessChecked(true));
     return () => { clearTimeout(t); clearInterval(interval); };
   }, []);
 
@@ -141,6 +148,9 @@ export default function BeastModePage() {
     ];
     setCheckpoints(cps); setProgress(0); setLogs([]); setMissionRunning(true); setMissionActive(true);
     addLog(`🚀 Beast Mode ${selectedLevel.toUpperCase()} initialized`); addLog(`Objective: ${objective}`);
+    if ((selectedLevel === 'approved' || selectedLevel === 'full') && !harnessConnected) {
+      addLog(`⚠ Browser harness not connected — agents will use fallback sources (OpenStreetMap, web search) with limited data`);
+    }
     await new Promise(r => setTimeout(r, 500));
     setCheckpoints(p => { const n = [...p]; n[0] = {...n[0], status: 'done'}; return n; }); setProgress(5);
     setCheckpoints(p => { const n = [...p]; n[1] = {...n[1], status: 'running'}; return n; }); addLog(`⏳ Planning mission...`); setProgress(10);
@@ -338,6 +348,16 @@ export default function BeastModePage() {
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
                     <div style={{ marginBottom: 4 }}>🔧 <strong>Tools:</strong> {lvl.toolText}</div>
                     <div style={{ marginBottom: 4 }}>🤖 <strong>Agents:</strong> {lvl.agentTier === 'all_preview' ? 'All agents previewed (none execute)' : lvl.agentTier === 'philosophers' ? '5 Philosophers (Plato, Socrates, Heraclitus, Pythagoras, Solon)' : lvl.agentTier === 'all_except_spending' ? 'All 15 agents — spending locked' : 'All 15 agents + spending enabled'}</div>
+                    {(selectedLevel === 'approved' || selectedLevel === 'full') && harnessChecked && !harnessConnected && (
+                      <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 6, background: 'rgba(201,162,77,0.15)', border: '1px solid rgba(201,162,77,0.3)', fontSize: 12, color: '#C9A24D' }}>
+                        ⚠️ <strong>Browser Harness not connected.</strong> Agents will fall back to OpenStreetMap + web search which have limited contact data. Install the harness agent from Integrations to enable Google Maps scraping and full browsing.
+                      </div>
+                    )}
+                    {(selectedLevel === 'approved' || selectedLevel === 'full') && harnessChecked && harnessConnected && (
+                      <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 6, background: 'rgba(22,163,74,0.15)', border: '1px solid rgba(22,163,74,0.3)', fontSize: 12, color: '#16A34A' }}>
+                        ✅ <strong>Browser Harness connected.</strong> Agents can search Google Maps, browse the web, and access sites through your Chrome.
+                      </div>
+                    )}
                     {selectedLevel === 'full' && (
                       <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 6, background: 'rgba(139,32,32,0.15)', border: '1px solid rgba(139,32,32,0.3)', fontSize: 12, color: '#ff6b6b' }}>
                         ⚠️ Spending requires a connected payment provider (Stripe or similar) in Integrations. Without one, spending is simulated.

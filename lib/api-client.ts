@@ -602,7 +602,7 @@ export async function saveConnection(
   provider: string,
   secrets: Record<string, string>,
   config: Record<string, string>
-): Promise<{ provider: string; status: string; detail: string }> {
+): Promise<{ provider: string; status: string; detail: string; token?: string }> {
   return request(`/connections/${provider}`, { method: 'POST', body: { secrets, config } });
 }
 
@@ -669,6 +669,10 @@ export async function fixCampaignStatuses(): Promise<FixCampaignsResult> {
 }
 
 // ─── Beast Mode ───────────────────────────────────────────
+export async function getBrowserHarnessStatus(): Promise<{ connected: boolean; available: boolean; browser?: string; cdp?: boolean }> {
+  return request('/browser-harness/status');
+}
+
 export async function planBeastMission(objective: string, agents: string[], mode: string): Promise<any> {
   return request('/beast-mode/plan', { method: 'POST', body: { objective, agents, mode } });
 }
