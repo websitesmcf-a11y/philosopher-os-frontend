@@ -404,26 +404,26 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
                   {step.title}
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--foreground-secondary)', marginBottom: 10 }}>{step.desc}</p>
-                {'code' in step && (
+                {(step as any).code && (
                   <pre style={{
                     padding: '10px 12px', borderRadius: 6,
                     background: '#0f172a', color: '#e2e8f0',
                     fontFamily: 'var(--font-mono)', fontSize: 12,
                     whiteSpace: 'pre-wrap', marginBottom: 10,
-                  }}>{step.code}</pre>
+                  }}>{(step as any).code}</pre>
                 )}
-                {'items' in step && (
+                {(step as any).items && (
                   <ol style={{ margin: '0 0 10px', paddingLeft: 20, fontSize: 12, lineHeight: 1.8 }}>
-                    {step.items.map((item, j) => (
+                    {(step as any).items.map((item: string, j: number) => (
                       <li key={j} style={{ color: 'var(--foreground-secondary)' }}>{item}</li>
                     ))}
                   </ol>
                 )}
-                {'note' in step && (
+                {(step as any).note && (
                   <p style={{
                     fontSize: 11, color: 'var(--muted)', padding: '6px 10px',
                     background: 'rgba(37,211,102,0.04)', borderRadius: 4,
-                  }}>{step.note}</p>
+                  }}>{(step as any).note}</p>
                 )}
               </div>
             ))}
