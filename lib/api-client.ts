@@ -3,7 +3,7 @@
  */
 import { supabase } from './supabase';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jet-obligate-desktop.ngrok-free.dev/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
 
 // ─── Typed error hierarchy ──────────────────────────
 
@@ -417,7 +417,7 @@ export async function* chatStream(
   conversationId?: string,
   signal?: AbortSignal,
 ): AsyncGenerator<SSEEvent> {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jet-obligate-desktop.ngrok-free.dev/api/v1';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
   const response = await fetch(`${API_BASE}/chat/stream`, {

@@ -218,7 +218,7 @@ export default function NotificationsSettingsPage() {
   };
 
   const handleSendTestNotification = async () => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://jet-obligate-desktop.ngrok-free.dev/api/v1';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://web-production-a93f0.up.railway.app/api/v1';
     const token = localStorage.getItem('auth_token');
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
     const results: string[] = [];

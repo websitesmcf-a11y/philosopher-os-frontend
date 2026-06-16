@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { getCurrentUser, updateUser, ApiError } from '@/lib/api-client';
 import { PORTRAITS } from '@/lib/philosopher-assets';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://jet-obligate-desktop.ngrok-free.dev/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
 
 const TIMEZONES = [
   'Africa/Johannesburg', 'Africa/Cairo', 'Africa/Lagos', 'Africa/Nairobi',
