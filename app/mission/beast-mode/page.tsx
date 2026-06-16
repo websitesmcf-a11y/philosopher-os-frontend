@@ -12,22 +12,30 @@ const BEAST_LEVELS = [
   {
     id: 'dry_run', label: 'Level 1 — Dry Run', icon: FileText, color: '#6F7D4F', desc: 'Simulate the mission.',
     danger: 'SAFE', dangerColor: '#16A34A',
-    warning: 'Simulates the mission. Shows you the plan. No messages sent, no data changed, nothing leaves your computer.',
+    agentTier: 'all_preview',
+    warning: 'Simulates the mission. Shows you the plan, agent suggestions, and what would happen. No messages sent, no data changed, nothing leaves your computer.',
+    toolText: 'Planning only — no tool execution',
   },
   {
     id: 'assisted', label: 'Level 2 — Assisted Flow', icon: Shield, color: '#123C69', desc: 'Agents prepare work.',
     danger: 'LOW RISK', dangerColor: '#2563EB',
-    warning: 'Agents prepare all the work but pause for your approval before any external action (sending a message, changing data).',
+    agentTier: 'philosophers',
+    warning: 'Philosopher agents (Plato, Socrates, Heraclitus, Pythagoras, Solon) prepare the work but pause for approval before any external action. Gods/Titans are locked at this level.',
+    toolText: 'Reasoning + memory only — no web search',
   },
   {
     id: 'approved', label: 'Level 3 — Approved Execution', icon: Play, color: '#C9A24D', desc: 'Agents execute approved actions.',
     danger: 'MEDIUM RISK', dangerColor: '#D97706',
-    warning: 'Agents execute approved actions automatically within rate limits. Can send real messages and modify CRM data.',
+    agentTier: 'all_except_spending',
+    warning: 'All 15 agents including Gods/Titans execute automatically. Browser/web search tools enabled. Can send real messages and modify CRM data. Spending is NOT allowed.',
+    toolText: 'All tools except spending — web search, browser, find_businesses',
   },
   {
     id: 'full', label: 'Level 4 — Full Beast Mode', icon: Zap, color: '#8B2020', desc: 'Full autonomous execution.',
     danger: 'HIGH RISK', dangerColor: '#DC2626',
-    warning: 'Fully autonomous. Agents send real messages, modify data, spend money on APIs, and act without asking. Only use with all integrations connected and after testing on lower levels.',
+    agentTier: 'all',
+    warning: 'Fully autonomous. All 15 agents + browser tools + spending capability. Agents can send real messages, modify data, spend money on APIs, and act without asking. Only use with all integrations connected and banking details configured.',
+    toolText: 'Everything — including payment/spend tools',
   },
 ];
 
@@ -284,18 +292,57 @@ export default function BeastModePage() {
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:11, fontWeight:700, letterSpacing:0.5, color:'rgba(255,255,255,0.4)', marginBottom:6 }}>PHILOSOPHERS (Strategy &amp; Planning)</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:14 }}>
-                {PHILOSOPHERS.map(a => (<button key={a} onClick={() => toggleAgent(a)} style={{ padding:'4px 10px', fontSize:12, border:`1px solid ${selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.15)'}`, borderRadius:4, cursor:'pointer', background:selectedAgents.includes(a) ? 'rgba(201,162,77,0.15)' : 'rgba(255,255,255,0.05)', color:selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.7)' }}>{a}</button>))}
+                {PHILOSOPHERS.map(a => {
+                  const locked = selectedLevel === 'assisted' ? false : selectedLevel === 'dry_run' ? true : false;
+                  return (<button key={a} onClick={() => !locked && toggleAgent(a)} style={{ padding:'4px 10px', fontSize:12, border:`1px solid ${selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.15)'}`, borderRadius:4, cursor:locked ? 'not-allowed' : 'pointer', background:selectedAgents.includes(a) ? 'rgba(201,162,77,0.15)' : 'rgba(255,255,255,0.05)', color:selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.7)', opacity: locked ? 0.4 : 1 }}>{a}{locked ? ' 🔒' : ''}</button>);
+                })}
               </div>
               <div style={{ fontSize:11, fontWeight:700, letterSpacing:0.5, color:'rgba(255,255,255,0.4)', marginBottom:6 }}>GODS &amp; TITANS (Execution)</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-                {GODS.map(a => (<button key={a} onClick={() => toggleAgent(a)} style={{ padding:'4px 10px', fontSize:12, border:`1px solid ${selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.15)'}`, borderRadius:4, cursor:'pointer', background:selectedAgents.includes(a) ? 'rgba(201,162,77,0.15)' : 'rgba(255,255,255,0.05)', color:selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.7)' }}>{a}</button>))}
+                {GODS.map(a => {
+                  const locked = selectedLevel === 'assisted' || selectedLevel === 'dry_run';
+                  return (<button key={a} onClick={() => !locked && toggleAgent(a)} style={{ padding:'4px 10px', fontSize:12, border:`1px solid ${selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.15)'}`, borderRadius:4, cursor:locked ? 'not-allowed' : 'pointer', background:selectedAgents.includes(a) ? 'rgba(201,162,77,0.15)' : 'rgba(255,255,255,0.05)', color:selectedAgents.includes(a) ? '#C9A24D' : 'rgba(255,255,255,0.7)', opacity: locked ? 0.4 : 1 }}>{a}{locked ? ' 🔒' : ''}</button>);
+                })}
+              </div>
+              <div style={{ fontSize:11, color:'rgba(255,255,255,0.3)', marginTop:8 }}>
+                {(() => {
+                  const lvl = BEAST_LEVELS.find(l => l.id === selectedLevel);
+                  if (!lvl) return '';
+                  return <span>🔧 {lvl.toolText}</span>;
+                })()}
               </div>
             </div>
             <button className="btn btn-primary" onClick={handleStart} disabled={!objective || missionRunning} style={{ padding:'12px 24px', fontSize:15, fontWeight:600 }}><Play size={18} /> {selectedLevel === 'dry_run' ? 'Run Dry Run' : 'Start Mission'}</button>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', color:'rgba(255,255,255,0.5)', fontSize:14 }}>
-            <Zap size={48} style={{ opacity:0.3, marginBottom:16, color:'#C9A24D' }} />
-            <p style={{ color:'rgba(255,255,255,0.6)' }}>Configure your mission and click <strong style={{ color:'#fff' }}>Run</strong>.</p>
+          <div style={{ display:'flex', flexDirection:'column', gap: 12 }}>
+            {(() => {
+              const lvl = BEAST_LEVELS.find(l => l.id === selectedLevel);
+              if (!lvl) return null;
+              return <>
+                <div style={{ padding: 16, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Zap size={16} color={lvl.color} />
+                    <span style={{ color: lvl.color }}>{lvl.label}</span>
+                  </div>
+                  <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.6)', marginBottom: 12 }}>{lvl.warning}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                    <div style={{ marginBottom: 4 }}>🔧 <strong>Tools:</strong> {lvl.toolText}</div>
+                    <div style={{ marginBottom: 4 }}>🤖 <strong>Agents:</strong> {lvl.agentTier === 'all_preview' ? 'All agents previewed (none execute)' : lvl.agentTier === 'philosophers' ? '5 Philosophers (Plato, Socrates, Heraclitus, Pythagoras, Solon)' : lvl.agentTier === 'all_except_spending' ? 'All 15 agents — spending locked' : 'All 15 agents + spending enabled'}</div>
+                    {selectedLevel === 'full' && (
+                      <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 6, background: 'rgba(139,32,32,0.15)', border: '1px solid rgba(139,32,32,0.3)', fontSize: 12, color: '#ff6b6b' }}>
+                        ⚠️ Spending requires a connected payment provider (Stripe or similar) in Integrations. Without one, spending is simulated.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ padding: 14, borderRadius: 8, background: 'rgba(201,162,77,0.06)', border: '1px solid rgba(201,162,77,0.15)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#C9A24D', marginBottom: 6 }}>💡 Tip</div>
+                  <p style={{ fontSize: 12, lineHeight: 1.5, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                    Start with <strong>Dry Run</strong> to see the plan, then move up levels as you verify each step. God/Titan agents are unlocked at Level 3+ and can take autonomous actions.
+                  </p>
+                </div>
+              </>;
+            })()}
           </div>
         </div>
       </div>
