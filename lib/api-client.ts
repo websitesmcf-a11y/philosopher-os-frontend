@@ -48,10 +48,7 @@ type RequestOptions = {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, params, headers = {}, signal } = opts;
 
-  // Add trailing slash so FastAPI routes match (backends use "/" paths).
-  // The browser's fetch follows any 307 redirects preserving method + body.
-  const trailing = path.includes('?') ? '' : path.endsWith('/') ? '' : '/';
-  let url = `${API_BASE}${path}${trailing}`;
+  let url = `${API_BASE}${path}`;
   if (params) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
