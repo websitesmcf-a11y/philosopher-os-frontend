@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Shield, FileText, Play, Square, AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
-import { planBeastMission, chatWithAgent } from '@/lib/api-client';
+import { planBeastMission, executeBeastMission } from '@/lib/api-client';
 import { ShiningText } from '@/components/ui/shining-text';
 import { Loader, TextDotsLoader } from '@/components/ui/loader';
 import { SmokeBackground } from '@/components/ui/smoke-background';
@@ -135,7 +135,8 @@ export default function BeastModePage() {
     const cps = [
       { label: 'Initializing', status: 'running' as const },
       { label: 'Planning mission', status: 'pending' as const },
-      ...Array.from({ length: totalAgents }, (_, i) => ({ label: `Agent ${i+1}/${totalAgents}: ${selectedAgents[i]}`, status: 'pending' as const })),
+      { label: 'Executing mission', status: 'pending' as const },
+      ...(totalAgents > 0 ? Array.from({ length: totalAgents }, (_, i) => ({ label: `Agent ${i+1}/${totalAgents}: ${selectedAgents[i]}`, status: 'pending' as const })) : []),
       { label: 'Mission Complete', status: 'pending' as const },
     ];
     setCheckpoints(cps); setProgress(0); setLogs([]); setMissionRunning(true); setMissionActive(true);
@@ -145,23 +146,32 @@ export default function BeastModePage() {
     setCheckpoints(p => { const n = [...p]; n[1] = {...n[1], status: 'running'}; return n; }); addLog(`⏳ Planning mission...`); setProgress(10);
     try {
       const plan = await planBeastMission(objective, selectedAgents, selectedLevel);
-      setCheckpoints(p => { const n = [...p]; n[1] = {...n[1], status: 'done'}; return n; }); addLog(`✅ Mission plan created`); setProgress(20);
+      setCheckpoints(p => { const n = [...p]; n[1] = {...n[1], status: 'done'}; return n; }); addLog(`✅ Mission plan created`); setProgress(15);
       if (selectedLevel !== 'dry_run' && selectedAgents.length > 0) {
-        let completed = 0, failed = 0;
-        for (let i = 0; i < selectedAgents.length; i++) {
-          const agent = selectedAgents[i], cpIdx = 2 + i;
-          setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'running'}; return n; });
-          addLog(`⏳ Agent ${i+1}/${selectedAgents.length}: ${agent} running...`); setProgress(20 + Math.floor((i / selectedAgents.length) * 70));
-          try {
-            const response = await chatWithAgent(objective, agent, undefined);
-            setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'done', detail: response.reply?.slice(0,80)}; return n; });
-            addLog(`✅ Agent ${i+1}/${selectedAgents.length}: ${agent} — ${(response.reply||'').slice(0,150)}`); completed++;
-          } catch (err: any) {
-            setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'error', detail: err?.message}; return n; });
-            addLog(`❌ Agent ${i+1}/${selectedAgents.length}: ${agent} — ${err?.detail || err?.message || 'Error'}`); failed++;
+        setCheckpoints(p => { const n = [...p]; n[2] = {...n[2], status: 'running'}; return n; });
+        addLog(`⏳ Executing all agents on backend...`); setProgress(20);
+        try {
+          const execution = await executeBeastMission(objective, selectedAgents, selectedLevel);
+          const agentCps = cps.slice(3, -1);
+          let completed = 0, failed = 0;
+          execution.steps?.forEach((step: any, i: number) => {
+            const cpIdx = 3 + i;
+            if (step.status === 'completed') {
+              setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'done', detail: (step.result||'').slice(0,80)}; return n; });
+              addLog(`✅ Agent ${i+1}/${totalAgents}: ${step.agent} — ${(step.result||'').slice(0,200)}`); completed++;
+            } else {
+              setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'error', detail: step.error}; return n; });
+              addLog(`❌ Agent ${i+1}/${totalAgents}: ${step.agent} — ${step.error || 'Failed'}`); failed++;
+            }
+          });
+          if (execution.errors?.length) {
+            execution.errors.forEach((e: string) => addLog(`⚠ ${e}`));
           }
+          addLog(`🏁 Mission complete — ${completed} succeeded, ${failed} failed`);
+        } catch (err: any) {
+          addLog(`❌ Execution failed: ${err?.detail || err?.message || 'Unknown error'}`);
         }
-        addLog(`🏁 Mission complete — ${completed} succeeded, ${failed} failed`);
+        setCheckpoints(p => { const n = [...p]; n[2] = {...n[2], status: 'done'}; return n; });
       } else addLog(`⚠ Dry run — no external actions taken.`);
       setProgress(100); setCheckpoints(p => { const n = [...p]; n[n.length-1] = {...n[n.length-1], status: 'done'}; return n; });
     } catch (err: any) { addLog(`❌ Mission failed: ${err?.detail || err?.message}`); }
