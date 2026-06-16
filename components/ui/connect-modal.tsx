@@ -129,8 +129,9 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     instructions: [
       { text: 'Step 1 — Install the browser-harness CLI from the hermes-agent repo:' },
       { code: true, text: 'git clone https://github.com/websitesmcf-a11y/hermes-agent.git\ncd hermes-agent\npython -m pip install -e ./browser-harness\n# Verify: browser-harness --version' },
-      { text: 'Step 2 — Start Chrome with remote debugging. Close all Chrome windows, then run:' },
-      { code: true, text: '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222' },
+      { text: 'Step 2 — Start Chrome with remote debugging. Close all Chrome windows, then run in PowerShell:' },
+      { code: true, text: '& "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222' },
+      { text: '(Or in cmd.exe: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222)' },
       { text: 'Step 3 — Download the Philosopher OS harness agent:' },
       { code: true, text: 'curl -o philosopher-harness.py https://web-production-a93f0.up.railway.app/api/v1/browser-harness/agent-script' },
       { text: 'Step 4 — Save below to generate a token, then run the command that appears:' },
