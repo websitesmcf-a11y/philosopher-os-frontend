@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { X, Loader2, Plug, Lock, AlertTriangle, MessageCircle } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Derive the backend host for the agent WebSocket URL (strip /api/v1 suffix)
+const BACKEND_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, '');
 
 type FieldKind = 'secret' | 'config';
 
@@ -125,14 +127,13 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     image: `${CARD_BASE}/integration-browser.jpg`,
     backendProvider: 'browser_harness',
     instructions: [
-      { text: 'Step 1 — Make sure browser-harness is installed and your browser is running with remote debugging.' },
-      { text: 'Windows: Open Chrome, then run this in PowerShell (close all Chrome windows first):' },
+      { text: 'Step 1 — Install the browser-harness CLI from the hermes-agent repo:' },
+      { code: true, text: 'git clone https://github.com/websitesmcf-a11y/hermes-agent.git\ncd hermes-agent\npython -m pip install -e ./browser-harness\n# Verify: browser-harness --version' },
+      { text: 'Step 2 — Start Chrome with remote debugging. Close all Chrome windows, then run:' },
       { code: true, text: '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222' },
-      { text: 'Mac/Linux: browser-harness CLI is already on your PATH.' },
-      { text: 'Step 2 — Download the Philosopher OS harness agent:' },
+      { text: 'Step 3 — Download the Philosopher OS harness agent:' },
       { code: true, text: 'curl -o philosopher-harness.py https://web-production-a93f0.up.railway.app/api/v1/browser-harness/agent-script' },
-      { text: 'Step 3 — Save below to generate a token, then run this command in your terminal:' },
-      { text: 'After saving, a token will appear. Copy the run command into your terminal.' },
+      { text: 'Step 4 — Save below to generate a token, then run the command that appears:' },
     ],
     fields: [
       { name: 'token', label: 'Token (auto-generated on save)', kind: 'secret', type: 'password' },
@@ -243,7 +244,7 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
           if (spec.backendProvider === 'browser_harness' && data.token) {
             setPostConnect({
               token: data.token,
-              runCommand: `python philosopher-harness.py --url ${window.location.origin} --token ${data.token}`,
+              runCommand: `python philosopher-harness.py --url ${BACKEND_ORIGIN} --token ${data.token}`,
             });
             setSubmitting(false);
             return;
