@@ -2,7 +2,7 @@
 
 import { useState, useEffect, type FormEvent } from 'react';
 import Image from 'next/image';
-import { X, Loader2, Plug, Lock, AlertTriangle } from 'lucide-react';
+import { X, Loader2, Plug, Lock, AlertTriangle, MessageCircle } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -175,6 +175,8 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWhatsAppTutorial, setShowWhatsAppTutorial] = useState(uiProvider === 'whatsapp');
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   // Seed defaults each time the modal opens for a given provider.
   const fieldsKey = spec ? spec.fields.map(f => `${f.name}=${f.defaultValue ?? ''}`).join('|') : '';
@@ -335,7 +337,122 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
           </div>
         </div>
 
-        {/* Scrollable body */}
+        {/* WhatsApp Tutorial — shown first time for WhatsApp */}
+        {showWhatsAppTutorial && (
+          <div style={{ padding: 24, overflowY: 'auto' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+              fontSize: 13, fontWeight: 600, color: '#25D366',
+            }}>
+              <MessageCircle size={18} /> WhatsApp Setup Guide
+            </div>
+            <div style={{
+              padding: 12, marginBottom: 16, borderRadius: 8,
+              background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.15)',
+              fontSize: 12, color: 'var(--foreground-secondary)', lineHeight: 1.5,
+            }}>
+              <strong>⚠️ One connection per user</strong><br/>
+              Each user must connect their own WhatsApp. The admin's connection is separate.
+            </div>
+
+            {[
+              {
+                title: 'Install the WhatsApp Bridge',
+                desc: 'Open PowerShell and run:',
+                code: 'cd C:\\Users\\felet\\socrates-ai\\apps\\wa-bot\nnpm install',
+              },
+              {
+                title: 'Start the Bridge',
+                desc: 'Run this command (keep the window open):',
+                code: 'npm start',
+                note: 'You\'ll see a QR code appear in the terminal after a few seconds.',
+              },
+              {
+                title: 'Scan the QR Code',
+                desc: 'On your phone:',
+                items: [
+                  'Open WhatsApp (or WhatsApp Business)',
+                  'Tap Menu (⋮) → Linked Devices',
+                  'Tap "Link a Device"',
+                  'Scan the QR code from the terminal',
+                ],
+              },
+              {
+                title: 'Done! 🎉',
+                desc: 'Once scanned, your WhatsApp is connected. You can now:',
+                items: [
+                  'Send campaign messages through your number',
+                  'Receive replies in the Conversations page',
+                  'Use the Auto Reply Bot',
+                ],
+                note: 'The session may expire every 2-4 weeks. Just re-scan the QR code to reconnect.',
+              },
+            ].map((step, i) => (
+              <div key={i} style={{
+                display: tutorialStep === i ? 'block' : 'none',
+              }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
+                  fontSize: 14, fontWeight: 600,
+                }}>
+                  <span style={{
+                    width: 22, height: 22, borderRadius: '50%',
+                    background: '#25D366', color: '#fff', fontSize: 11,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>{i + 1}</span>
+                  {step.title}
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--foreground-secondary)', marginBottom: 10 }}>{step.desc}</p>
+                {'code' in step && (
+                  <pre style={{
+                    padding: '10px 12px', borderRadius: 6,
+                    background: '#0f172a', color: '#e2e8f0',
+                    fontFamily: 'var(--font-mono)', fontSize: 12,
+                    whiteSpace: 'pre-wrap', marginBottom: 10,
+                  }}>{step.code}</pre>
+                )}
+                {'items' in step && (
+                  <ol style={{ margin: '0 0 10px', paddingLeft: 20, fontSize: 12, lineHeight: 1.8 }}>
+                    {step.items.map((item, j) => (
+                      <li key={j} style={{ color: 'var(--foreground-secondary)' }}>{item}</li>
+                    ))}
+                  </ol>
+                )}
+                {'note' in step && (
+                  <p style={{
+                    fontSize: 11, color: 'var(--muted)', padding: '6px 10px',
+                    background: 'rgba(37,211,102,0.04)', borderRadius: 4,
+                  }}>{step.note}</p>
+                )}
+              </div>
+            ))}
+
+            {/* Tutorial nav buttons */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
+              <button
+                onClick={() => setTutorialStep(s => Math.max(0, s - 1))}
+                disabled={tutorialStep === 0}
+                className="btn btn-sm btn-ghost"
+                style={{ opacity: tutorialStep === 0 ? 0.3 : 1 }}
+              >
+                ← Back
+              </button>
+              <button
+                className={`btn btn-sm ${tutorialStep === 3 ? 'btn-primary' : ''}`}
+                onClick={() => {
+                  if (tutorialStep < 3) setTutorialStep(s => s + 1);
+                  else setShowWhatsAppTutorial(false);
+                }}
+              >
+                {tutorialStep === 3 ? 'I\'m Connected! →' : 'Next →'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Regular connect form (hidden during WhatsApp tutorial) */}
+        {!showWhatsAppTutorial && (
         <form onSubmit={handleSubmit} style={{ padding: 24, overflowY: 'auto' }}>
           {/* Instructions with styled steps */}
           <div style={{
@@ -465,6 +582,7 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

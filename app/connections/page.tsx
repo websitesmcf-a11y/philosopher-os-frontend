@@ -183,6 +183,11 @@ export default function ConnectionsPage() {
       router.push('/finance');
       return;
     }
+    // WhatsApp shows setup tutorial first
+    if (provider === 'whatsapp') {
+      setModalProvider('whatsapp');
+      return;
+    }
     setModalProvider(provider);
   };
 
