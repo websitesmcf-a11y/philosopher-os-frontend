@@ -128,7 +128,7 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     backendProvider: 'browser_harness',
     instructions: [
       { text: 'Step 1 — Install the browser-harness CLI from the hermes-agent repo:' },
-      { code: true, text: 'git clone https://github.com/websitesmcf-a11y/hermes-agent.git\ncd hermes-agent\npython -m pip install -e ./browser-harness\n# Verify: browser-harness --version' },
+      { code: true, text: 'git clone https://github.com/NousResearch/hermes-agent.git\ncd hermes-agent\npython -m pip install -e ./browser-harness\n# Verify: browser-harness --version' },
       { text: 'Step 2 — Download the Philosopher OS harness agent:' },
       { code: true, text: 'curl -o philosopher-harness.py https://web-production-a93f0.up.railway.app/api/v1/browser-harness/agent-script' },
       { text: 'Step 3 — Save below to generate a token, then run the command that appears:' },

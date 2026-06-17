@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Shield, FileText, Play, Square, AlertTriangle, CheckCircle2, Loader2, Sparkles, X, ExternalLink, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
-import { planBeastMission, executeBeastMission, getBrowserHarnessStatus } from '@/lib/api-client';
+import { planBeastMission, executeBeastMission, getBeastMission, getBrowserHarnessStatus } from '@/lib/api-client';
 import { ShiningText } from '@/components/ui/shining-text';
 import { Loader, TextDotsLoader } from '@/components/ui/loader';
 import { SmokeBackground } from '@/components/ui/smoke-background';
@@ -180,33 +180,43 @@ export default function BeastModePage() {
           const POLL_INTERVAL = 3000;
           const MAX_POLLS = 600;
           let completed = 0, failed = 0;
+          const seenIndices = new Set<number>();
+          const seenErrors = new Set<string>();
           for (let poll = 0; poll < MAX_POLLS; poll++) {
             await new Promise(r => setTimeout(r, POLL_INTERVAL));
-            const mission = await getBeastMission(mission_id);
-            if (!mission) continue;
+            let mission: any;
+            try { mission = await getBeastMission(mission_id); } catch { continue; }
+            if (!mission || !mission.steps) continue;
             const steps = mission.steps || [];
             for (let i = 0; i < steps.length; i++) {
+              if (seenIndices.has(i)) continue;
               const step = steps[i];
               const cpIdx = 3 + i;
-              const cp = cps[cpIdx];
-              if (step.status === 'completed' && cp?.status !== 'done') {
+              if (step.status === 'completed') {
                 setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'done', detail: (step.result||'').slice(0,80)}; return n; });
                 addLog(`✅ Agent ${i+1}/${totalAgents}: ${step.agent} — ${(step.result||'').slice(0,200)}`); completed++;
-              } else if (step.status === 'failed' && cp?.status !== 'error') {
+                seenIndices.add(i);
+              } else if (step.status === 'failed') {
                 setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'error', detail: step.error}; return n; });
                 addLog(`❌ Agent ${i+1}/${totalAgents}: ${step.agent} — ${step.error || 'Failed'}`); failed++;
+                seenIndices.add(i);
               }
             }
             if (mission.errors?.length) {
               for (const e of mission.errors) {
+                if (seenErrors.has(e)) continue;
+                seenErrors.add(e);
                 addLog(`⚠ ${e}`);
               }
             }
-            const doneCount = (mission.steps || []).filter((s: any) => s.status === 'completed').length;
+            const doneCount = seenIndices.size;
             setProgress(20 + Math.round((doneCount / totalAgents) * 60));
             if (mission.status === 'completed' || mission.status === 'completed_with_errors' || mission.status === 'failed' || mission.status === 'cancelled') {
               addLog(`🏁 Mission complete — ${completed} succeeded, ${failed} failed`);
-              if (mission.status === 'failed') addLog(`❌ Mission failed: ${(mission.errors||[]).join(', ')}`);
+              if (mission.status === 'failed' || mission.status === 'completed_with_errors') {
+                const errs = (mission.errors||[]).filter((e: string) => !seenErrors.has(e));
+                if (errs.length) addLog(`⚠ ${errs.join('; ')}`);
+              }
               break;
             }
           }
