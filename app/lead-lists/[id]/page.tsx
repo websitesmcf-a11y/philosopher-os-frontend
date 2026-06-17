@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useParams, useRouter } from 'next/navigation';
-import { getLeadList, deleteLeadList, removeLeadFromList, listLeads, addLeadsToList, listCampaigns, reserveLeadList } from '@/lib/api-client';
+import { getLeadList, deleteLeadList, removeLeadFromList, listLeads, addLeadsToList, listCampaigns, reserveLeadList, lockLeadList, unlockLeadList } from '@/lib/api-client';
 import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { Layers, ArrowLeft, Trash2, Plus, X, Loader2, Search, Check, Lock, Unlock, ChevronDown, Users } from 'lucide-react';
@@ -99,6 +99,18 @@ export default function LeadListDetailPage() {
     onError: (e: Error) => toast.error(`Failed: ${e.message}`),
   });
 
+  const lockMut = useMutation({
+    mutationFn: () => lockLeadList(id),
+    onSuccess: (result) => { toast.success(result.message); invalidate(); },
+    onError: (e: Error) => toast.error(`Failed: ${e.message}`),
+  });
+
+  const unlockMut = useMutation({
+    mutationFn: () => unlockLeadList(id),
+    onSuccess: (result) => { toast.success(result.message); invalidate(); },
+    onError: (e: Error) => toast.error(`Failed: ${e.message}`),
+  });
+
   const toggleLead = (leadId: string) => {
     setSelectedLeadIds(prev => {
       const next = new Set(prev);
@@ -135,8 +147,13 @@ export default function LeadListDetailPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <Layers size={20} color="#6F7D4F" />
-            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
               {listName}
+              {listData?.locked && (
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Lock size={10} /> LOCKED
+                </span>
+              )}
             </h1>
           </div>
           {listData?.description && (
@@ -155,6 +172,10 @@ export default function LeadListDetailPage() {
             disabled={leads.length === 0}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <Lock size={14} /> Assign to Campaign
+          </button>
+          <button className="btn btn-sm" onClick={() => listData?.locked ? unlockMut.mutate() : lockMut.mutate()}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, borderColor: listData?.locked ? '#ef4444' : undefined, color: listData?.locked ? '#ef4444' : undefined }}>
+            {listData?.locked ? <><Unlock size={14} /> Unlock</> : <><Lock size={14} /> Lock</>}
           </button>
           <button className="btn btn-sm btn-ghost" onClick={() => { if (confirm('Delete this entire list?')) deleteMut.mutate(); }}
             style={{ color: '#ef4444' }}>

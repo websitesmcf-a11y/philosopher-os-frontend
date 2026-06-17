@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Shield, FileText, Play, Square, AlertTriangle, CheckCircle2, Loader2, Sparkles, X, ExternalLink, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
-import { planBeastMission, executeBeastMission, getBeastMission, getBrowserHarnessStatus } from '@/lib/api-client';
+import { planBeastMission, executeBeastMission, getBeastMission, controlBeastMission, getBrowserHarnessStatus } from '@/lib/api-client';
 import { ShiningText } from '@/components/ui/shining-text';
 import { Loader, TextDotsLoader } from '@/components/ui/loader';
 import { SmokeBackground } from '@/components/ui/smoke-background';
@@ -94,6 +94,7 @@ export default function BeastModePage() {
   const [autoSuggested, setAutoSuggested] = useState(false);
   const [missionRunning, setMissionRunning] = useState(false);
   const [missionActive, setMissionActive] = useState(false);
+  const [currentMissionId, setCurrentMissionId] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [checkpoints, setCheckpoints] = useState<{label:string;status:'pending'|'running'|'done'|'error';detail?:string}[]>([]);
@@ -175,6 +176,7 @@ export default function BeastModePage() {
         try {
           // Start the mission — backend returns immediately with a mission_id
           const { mission_id, status } = await executeBeastMission(objective, selectedAgents, selectedLevel);
+          setCurrentMissionId(mission_id);
           addLog(`📋 Mission ${mission_id} started (${status})`);
           // Poll for progress every 3 seconds
           const POLL_INTERVAL = 3000;
@@ -373,7 +375,12 @@ export default function BeastModePage() {
             : logs.map((log,i) => <div key={i} style={{ color: log.includes('❌')?'#ef4444':log.includes('⚠')?'#B8860B':log.includes('✅')||log.includes('🏁')?'#16A34A':log.includes('🚀')?'#C9A24D':'var(--foreground)' }}>{log}</div>)}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
-            {missionRunning ? <button className="btn" onClick={() => { setMissionRunning(false); setMissionActive(false); }} style={{ padding:'10px 24px', border:'1px solid #ef4444', color:'#ef4444', background:'rgba(239,68,68,0.1)', fontWeight:600 }}><Square size={16} /> Stop</button>
+            {missionRunning ? <button className="btn" onClick={async () => {
+              if (currentMissionId) {
+                try { await controlBeastMission(currentMissionId, 'cancel'); } catch {}
+              }
+              setMissionRunning(false); setMissionActive(false);
+            }} style={{ padding:'10px 24px', border:'1px solid #ef4444', color:'#ef4444', background:'rgba(239,68,68,0.1)', fontWeight:600 }}><Square size={16} /> Stop</button>
             : <button className="btn" onClick={() => setMissionActive(false)} style={{ padding:'10px 24px', border:'1px solid var(--border)', fontWeight:600 }}>Back to Controls</button>}
           </div>
         </div>

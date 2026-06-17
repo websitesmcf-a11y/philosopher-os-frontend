@@ -89,7 +89,7 @@ export default function LeadListsPage() {
       {/* Info banner */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, padding: '10px 16px', background: 'rgba(111,125,79,0.06)', border: '1px solid rgba(111,125,79,0.15)', borderRadius: 8, fontSize: 13, color: 'var(--foreground-secondary)' }}>
         <Lock size={16} color="#6F7D4F" />
-        <span>Leads in a list are <strong>reserved</strong> when assigned to a campaign — they are locked from the general lead pool and only visible to the campaign owner.</span>
+        <span>Lead lists can be <strong>locked</strong> to prevent any changes, or <strong>reserved</strong> by a campaign to lock leads from the general pool.</span>
       </div>
 
       {isLoading ? (
@@ -122,7 +122,10 @@ export default function LeadListsPage() {
                     <Layers size={20} color="#6F7D4F" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, fontFamily: 'var(--font-heading)', color: 'var(--foreground)' }}>{list.name}</h3>
+                    <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, fontFamily: 'var(--font-heading)', color: 'var(--foreground)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {list.name}
+                      {(list as any).locked && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 999, background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>LOCKED</span>}
+                    </h3>
                     {list.description && (
                       <p style={{ fontSize: 12, color: 'var(--foreground-secondary)', marginTop: 4, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {list.description}
