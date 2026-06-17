@@ -286,6 +286,21 @@ export async function unlockLeadList(listId: string): Promise<{ locked: boolean;
   return request(`/lead-lists/${listId}/unlock`, { method: 'POST' });
 }
 
+export interface CleanupLeadListResult {
+  removed: number;
+  remaining: number;
+  total_before: number;
+  criteria: string[];
+  message: string;
+}
+
+export async function cleanupLeadList(
+  listId: string,
+  opts: { remove_no_phone?: boolean; remove_no_email?: boolean },
+): Promise<CleanupLeadListResult> {
+  return request(`/lead-lists/${listId}/cleanup`, { method: 'POST', body: opts });
+}
+
 // ─── Clients ─────────────────────────────────────────
 
 export async function listClients(params?: { page?: number; page_size?: number; status?: string }) {

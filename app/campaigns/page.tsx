@@ -80,6 +80,7 @@ export default function CampaignsPage() {
         channel: form.channel,
         message_template: form.message_template,
         status: 'draft',
+        lead_list_id: form.leadListId,
         schedule_config: {
           interval_min_minutes: intervalMin,
           interval_max_minutes: intervalMax,
