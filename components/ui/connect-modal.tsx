@@ -4,8 +4,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import Image from 'next/image';
 import { X, Loader2, Plug, Lock, AlertTriangle, MessageCircle } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
-// The WebSocket-based browser harness connects directly to Railway (not the Vercel proxy)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
 const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_WS_URL || 'https://web-production-a93f0.up.railway.app';
 
 type FieldKind = 'secret' | 'config';
