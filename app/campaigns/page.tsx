@@ -92,7 +92,9 @@ export default function CampaignsPage() {
       setForm({ name: '', channel: 'whatsapp', message_template: '', objective: '', leadListId: '', intervalMin: 20, intervalMax: 30, senderName: '' });
       invalidate();
     } catch (e: any) {
-      toast.error(e?.detail || 'Failed to create campaign');
+      console.error('Campaign create error:', e);
+      const msg = e?.detail || e?.message || e?.toString?.() || 'Failed to create campaign';
+      toast.error(msg);
     } finally {
       setShowLoading(null);
     }
