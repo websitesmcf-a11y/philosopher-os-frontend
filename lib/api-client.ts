@@ -326,6 +326,19 @@ export async function deleteCampaign(id: string): Promise<{ deleted: boolean }> 
   return request(`/campaigns/${id}`, { method: 'DELETE' });
 }
 
+export interface CampaignLead {
+  id: string; name: string; phone?: string; email?: string; company?: string;
+  status: string; sent_at?: string | null; replied_at?: string | null;
+}
+
+export async function getCampaign(id: string): Promise<Campaign> {
+  return request(`/campaigns/${id}`);
+}
+
+export async function getCampaignLeads(id: string, statusFilter?: string): Promise<{ items: CampaignLead[]; total: number }> {
+  return request(`/campaigns/${id}/leads`, { params: statusFilter ? { status: statusFilter } : undefined });
+}
+
 // ─── Calendar ─────────────────────────────────────────
 
 export async function listCalendarEvents(params?: { start?: string; end?: string }) {
