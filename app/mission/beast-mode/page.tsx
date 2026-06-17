@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Zap, Shield, FileText, Play, Square, AlertTriangle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { Zap, Shield, FileText, Play, Square, AlertTriangle, CheckCircle2, Loader2, Sparkles, X, ExternalLink, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { planBeastMission, executeBeastMission, getBrowserHarnessStatus } from '@/lib/api-client';
 import { ShiningText } from '@/components/ui/shining-text';
@@ -99,6 +99,18 @@ export default function BeastModePage() {
   const [checkpoints, setCheckpoints] = useState<{label:string;status:'pending'|'running'|'done'|'error';detail?:string}[]>([]);
   const [harnessConnected, setHarnessConnected] = useState(false);
   const [harnessChecked, setHarnessChecked] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !localStorage.getItem('beast-mode-tutorial-seen')) {
+      setShowTutorial(true);
+    }
+  }, [loading]);
+
+  const dismissTutorial = () => {
+    localStorage.setItem('beast-mode-tutorial-seen', '1');
+    setShowTutorial(false);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => setLoadProgress(p => Math.min(p + 2, 100)), 100);
@@ -159,25 +171,45 @@ export default function BeastModePage() {
       setCheckpoints(p => { const n = [...p]; n[1] = {...n[1], status: 'done'}; return n; }); addLog(`✅ Mission plan created`); setProgress(15);
       if (selectedLevel !== 'dry_run' && selectedAgents.length > 0) {
         setCheckpoints(p => { const n = [...p]; n[2] = {...n[2], status: 'running'}; return n; });
-        addLog(`⏳ Executing all agents on backend...`); setProgress(20);
+        addLog(`⏳ Starting agents on backend (async)...`); setProgress(20);
         try {
-          const execution = await executeBeastMission(objective, selectedAgents, selectedLevel);
-          const agentCps = cps.slice(3, -1);
+          // Start the mission — backend returns immediately with a mission_id
+          const { mission_id, status } = await executeBeastMission(objective, selectedAgents, selectedLevel);
+          addLog(`📋 Mission ${mission_id} started (${status})`);
+          // Poll for progress every 3 seconds
+          const POLL_INTERVAL = 3000;
+          const MAX_POLLS = 600;
           let completed = 0, failed = 0;
-          execution.steps?.forEach((step: any, i: number) => {
-            const cpIdx = 3 + i;
-            if (step.status === 'completed') {
-              setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'done', detail: (step.result||'').slice(0,80)}; return n; });
-              addLog(`✅ Agent ${i+1}/${totalAgents}: ${step.agent} — ${(step.result||'').slice(0,200)}`); completed++;
-            } else {
-              setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'error', detail: step.error}; return n; });
-              addLog(`❌ Agent ${i+1}/${totalAgents}: ${step.agent} — ${step.error || 'Failed'}`); failed++;
+          for (let poll = 0; poll < MAX_POLLS; poll++) {
+            await new Promise(r => setTimeout(r, POLL_INTERVAL));
+            const mission = await getBeastMission(mission_id);
+            if (!mission) continue;
+            const steps = mission.steps || [];
+            for (let i = 0; i < steps.length; i++) {
+              const step = steps[i];
+              const cpIdx = 3 + i;
+              const cp = cps[cpIdx];
+              if (step.status === 'completed' && cp?.status !== 'done') {
+                setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'done', detail: (step.result||'').slice(0,80)}; return n; });
+                addLog(`✅ Agent ${i+1}/${totalAgents}: ${step.agent} — ${(step.result||'').slice(0,200)}`); completed++;
+              } else if (step.status === 'failed' && cp?.status !== 'error') {
+                setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'error', detail: step.error}; return n; });
+                addLog(`❌ Agent ${i+1}/${totalAgents}: ${step.agent} — ${step.error || 'Failed'}`); failed++;
+              }
             }
-          });
-          if (execution.errors?.length) {
-            execution.errors.forEach((e: string) => addLog(`⚠ ${e}`));
+            if (mission.errors?.length) {
+              for (const e of mission.errors) {
+                addLog(`⚠ ${e}`);
+              }
+            }
+            const doneCount = (mission.steps || []).filter((s: any) => s.status === 'completed').length;
+            setProgress(20 + Math.round((doneCount / totalAgents) * 60));
+            if (mission.status === 'completed' || mission.status === 'completed_with_errors' || mission.status === 'failed' || mission.status === 'cancelled') {
+              addLog(`🏁 Mission complete — ${completed} succeeded, ${failed} failed`);
+              if (mission.status === 'failed') addLog(`❌ Mission failed: ${(mission.errors||[]).join(', ')}`);
+              break;
+            }
           }
-          addLog(`🏁 Mission complete — ${completed} succeeded, ${failed} failed`);
         } catch (err: any) {
           addLog(`❌ Execution failed: ${err?.detail || err?.message || 'Unknown error'}`);
         }
@@ -211,6 +243,86 @@ export default function BeastModePage() {
           </div>
         </div>
         <TextDotsLoader text="Initializing" size="lg" />
+      </div>
+    </div>
+  );
+
+  // First-time tutorial overlay
+  if (showTutorial) return (
+    <div className="min-h-screen w-full relative" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0a0e12', overflowY: 'auto' }}>
+      <div className="absolute inset-0 z-0" style={{ backgroundImage: 'radial-gradient(circle at center, #FFF991 0%, transparent 70%)', opacity: 0.3, mixBlendMode: 'multiply' }} />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto', padding: '48px 32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+          <ShiningText text="🐉 Welcome to Beast Mode" className="text-3xl font-bold" />
+          <button onClick={dismissTutorial} style={{ padding: 8, border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, cursor: 'pointer', background: 'transparent', color: 'rgba(255,255,255,0.5)' }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Level overview */}
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16, letterSpacing: '0.03em' }}>Choose Your Beast Level</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {BEAST_LEVELS.map(l => {
+              const Icon = l.icon;
+              return (
+                <div key={l.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 8, background: `${l.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={18} color={l.color} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{l.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, color: l.dangerColor, background: `${l.dangerColor}14`, border: `1px solid ${l.dangerColor}33` }}>{l.danger}</span>
+                    </div>
+                    <p style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', margin: 0 }}>{l.warning}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Browser harness requirement */}
+        <div style={{ marginBottom: 28, padding: '18px 20px', borderRadius: 10, background: 'rgba(18,60,105,0.1)', border: '1px solid rgba(18,60,105,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <ExternalLink size={18} color="#3B82F6" />
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#3B82F6' }}>Levels 3 &amp; 4 Need Browser Harness</span>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.7)', margin: 0 }}>
+            Web search, Google Maps scraping, and site browsing require the <strong>Browser Harness</strong> — a small agent you install on your computer that connects your local Chrome to Philosopher OS. Without it, agents fall back to OpenStreetMap and basic web search which have limited data.
+          </p>
+          <p style={{ fontSize: 12, color: 'rgba(59,130,246,0.7)', marginTop: 8, marginBottom: 0 }}>
+            → Set it up in <strong>Integrations → Browser Harness</strong>. It takes 2 minutes.
+          </p>
+        </div>
+
+        {/* Payment requirement */}
+        <div style={{ marginBottom: 32, padding: '18px 20px', borderRadius: 10, background: 'rgba(139,32,32,0.1)', border: '1px solid rgba(139,32,32,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <Zap size={18} color="#ff6b6b" />
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#ff6b6b' }}>Level 4 Spending Requires Stripe</span>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.7)', margin: 0 }}>
+            Level 4 can spend money on APIs and services autonomously. To enable real spending, connect a <strong>Stripe</strong> or other payment provider in Integrations. Without one, all spending is simulated — agents will plan expenses but nothing actually charges.
+          </p>
+          <p style={{ fontSize: 12, color: 'rgba(255,107,107,0.7)', marginTop: 8, marginBottom: 0 }}>
+            → No payment provider needed unless you want agents to spend real money.
+          </p>
+        </div>
+
+        {/* Quick tip */}
+        <div style={{ marginBottom: 32, padding: '16px 20px', borderRadius: 10, background: 'rgba(201,162,77,0.08)', border: '1px solid rgba(201,162,77,0.2)' }}>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+            💡 <strong>Start with Dry Run</strong> to preview what the agents will do. Then work your way up. All agents are auto-suggested based on your objective — but you can always pick specific ones.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button onClick={dismissTutorial} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', fontSize: 15, fontWeight: 700 }}>
+            Got it, let's go <ArrowRight size={18} />
+          </button>
+        </div>
       </div>
     </div>
   );
