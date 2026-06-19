@@ -58,6 +58,7 @@ const navItems = [
       { href: '/connections', label: 'Integrations', icon: Plug },
       { href: '/tools/cleanup', label: 'CRM Cleanup', icon: ScanEye },
       { href: '/tools/agent-logs', label: 'Agent Run Logs', icon: ScrollText },
+      { href: '/hermes', label: 'Hermes Jobs', icon: Timer },
     ],
   },
   {

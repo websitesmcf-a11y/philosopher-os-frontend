@@ -731,4 +731,91 @@ export async function controlBeastMission(missionId: string, action: string) {
 export async function getBeastMission(missionId: string) {
   return request(`/beast-mode/${missionId}`);
 }
+// ─── Hermes Jobs ──────────────────────────────────────────
+
+export interface HermesJob {
+  id: string;
+  agent: string;
+  task: string;
+  task_type: string;
+  source: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'retrying';
+  progress_percent: number;
+  progress_message: string | null;
+  current_step: string | null;
+  completed_steps: number;
+  total_steps: number | null;
+  result: any;
+  error: string | null;
+  org_id: string | null;
+  mission_id: string | null;
+  parent_job_id: string | null;
+  attempt_count: number;
+  max_attempts: number;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  logs?: HermesJobLog[];
+  children?: HermesJob[];
+}
+
+export interface HermesJobLog {
+  id: string;
+  level: 'debug' | 'info' | 'warning' | 'error' | 'success';
+  message: string;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface HermesSubmitRequest {
+  agent: string;
+  task: string;
+  task_type?: string;
+  source?: string;
+  input?: Record<string, any>;
+  priority?: number;
+  max_attempts?: number;
+  scheduled_for?: string;
+  mission_id?: string;
+  parent_job_id?: string;
+}
+
+export async function submitHermesJob(req: HermesSubmitRequest): Promise<{ job_id: string; status: string }> {
+  return request('/hermes/jobs', { method: 'POST', body: req });
+}
+
+export async function listHermesJobs(params?: {
+  status?: string; agent?: string; source?: string; mission_id?: string; limit?: number;
+}): Promise<{ jobs: HermesJob[] }> {
+  return request('/hermes/jobs', { params: params as any });
+}
+
+export async function getHermesJob(jobId: string): Promise<HermesJob> {
+  return request(`/hermes/jobs/${jobId}`);
+}
+
+export async function getHermesJobStatus(jobId: string): Promise<HermesJob> {
+  return request(`/hermes/status/${jobId}`);
+}
+
+export async function cancelHermesJob(jobId: string): Promise<{ job_id: string; status: string }> {
+  return request(`/hermes/jobs/${jobId}/cancel`, { method: 'POST' });
+}
+
+export async function retryHermesJob(jobId: string): Promise<{ job_id: string; status: string }> {
+  return request(`/hermes/jobs/${jobId}/retry`, { method: 'POST' });
+}
+
+export async function getHermesJobLogs(jobId: string, level?: string): Promise<{ logs: HermesJobLog[]; count: number }> {
+  return request(`/hermes/jobs/${jobId}/logs`, { params: level ? { level } : undefined });
+}
+
+export async function getHermesHealth(): Promise<{
+  status: string; max_concurrent: number; running_jobs: number;
+  queued_jobs: number; failed_jobs: number; total_in_memory: number;
+  database_connected: boolean; semaphore_available: number;
+}> {
+  return request('/hermes/health');
+}
+
 // build-fresh-1781604165
