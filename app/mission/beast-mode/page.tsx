@@ -116,12 +116,18 @@ export default function BeastModePage() {
   useEffect(() => {
     const interval = setInterval(() => setLoadProgress(p => Math.min(p + 2, 100)), 100);
     const t = setTimeout(() => setLoading(false), 5000);
-    // Check browser harness status
-    getBrowserHarnessStatus().then(s => {
-      setHarnessConnected(s.connected);
-      setHarnessChecked(true);
-    }).catch(() => setHarnessChecked(true));
-    return () => { clearTimeout(t); clearInterval(interval); };
+
+    // Initial harness check + poll every 8s so status updates if agent starts/stops
+    const checkHarness = () => {
+      getBrowserHarnessStatus().then(s => {
+        setHarnessConnected(s.connected);
+        setHarnessChecked(true);
+      }).catch(() => setHarnessChecked(true));
+    };
+    checkHarness();
+    const harnessInterval = setInterval(checkHarness, 8000);
+
+    return () => { clearTimeout(t); clearInterval(interval); clearInterval(harnessInterval); };
   }, []);
 
   const addLog = (msg: string) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);

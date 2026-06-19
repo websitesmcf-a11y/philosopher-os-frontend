@@ -264,7 +264,7 @@ export default function ConnectionsPage() {
             features={integration.features}
             connectedBy={integration.status === 'connected' ? (myIntegrations[integration.provider] ? (currentUserName || 'You') : 'Admin') : undefined}
             onConnect={integration.status === 'disconnected' ? () => handleConnect(integration.provider) : undefined}
-            onConfigure={integration.status === 'disconnected' ? () => handleConfigure(integration.provider) : undefined}
+            onConfigure={integration.status === 'disconnected' || integration.status === 'setup_required' || integration.status === 'error' ? () => handleConfigure(integration.provider) : undefined}
             onDisconnect={integration.status === 'connected' ? () => handleDisconnect(integration.provider) : undefined}
           />
         ))}
