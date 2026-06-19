@@ -255,12 +255,28 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
       role: 'agent', content: '', agent: agentName, timestamp: new Date(),
     }]);
 
+    let gotContent = false;
+
+    const setError = (msg: string) => {
+      setAgentMessages(agentName, prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'agent',
+          content: msg,
+          agent: agentName,
+          timestamp: new Date(),
+        };
+        return updated;
+      });
+    };
+
     try {
       const { chatStream } = await import('@/lib/api-client');
 
       for await (const event of chatStream(text, agentName, convIds[agentName], signal)) {
         if (event.conversation_id) rememberConvId(agentName, event.conversation_id);
         if (event.type === 'token' && event.content) {
+          gotContent = true;
           setAgentMessages(agentName, prev => {
             const updated = [...prev];
             const last = updated[updated.length - 1];
@@ -270,30 +286,18 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
             return updated;
           });
         } else if (event.type === 'error') {
-          setAgentMessages(agentName, prev => {
-            const updated = [...prev];
-            updated[updated.length - 1] = {
-              role: 'agent',
-              content: `I apologize, but I encountered an error: ${event.content || 'Unknown error'}. Please try again.`,
-              agent: agentName,
-              timestamp: new Date(),
-            };
-            return updated;
-          });
+          setError(`Sorry, I ran into a problem: ${event.content || 'Unknown error'}. Please try again in a moment.`);
+          gotContent = true;
         }
+      }
+
+      // Stream closed with no content — the backend silently failed
+      if (!gotContent) {
+        setError('No response received. The AI models may be temporarily busy — please try again in a few seconds.');
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
-      setAgentMessages(agentName, prev => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: 'agent',
-          content: `I apologize, but I encountered an error: ${err instanceof Error ? err.message : 'Unable to reach the agent'}. Please try again.`,
-          agent: agentName,
-          timestamp: new Date(),
-        };
-        return updated;
-      });
+      setError(`Sorry, something went wrong: ${err instanceof Error ? err.message : 'Unable to reach the agent'}. Please try again.`);
     }
   };
 
