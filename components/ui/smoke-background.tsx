@@ -62,11 +62,14 @@ void main(){gl_Position=position;}`;
     this.init();
   }
 
+  get isReady() { return !!this.gl; }
+
   updateColor(newColor: [number, number, number]) {
     this.color = newColor;
   }
 
   updateScale() {
+    if (!this.gl) return;
     const dpr = Math.max(1, window.devicePixelRatio);
     const { innerWidth: width, innerHeight: height } = window;
     this.canvas.width = width * dpr;
@@ -165,26 +168,32 @@ export const SmokeBackground: React.FC<SmokeBackgroundProps> = ({
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const renderer = new Renderer(canvas, fragmentShaderSource);
-    rendererRef.current = renderer;
-
-    const handleResize = () => renderer.updateScale();
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
     let animationFrameId: number;
-    const loop = (now: number) => {
-      renderer.render(now);
-      animationFrameId = requestAnimationFrame(loop);
-    };
-    loop(0);
+    let renderer: Renderer | null = null;
+    try {
+      const canvas = canvasRef.current;
+      renderer = new Renderer(canvas, fragmentShaderSource);
+      rendererRef.current = renderer;
+      if (!renderer.isReady) return;
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
-      renderer.reset();
-    };
+      const handleResize = () => renderer!.updateScale();
+      handleResize();
+      window.addEventListener('resize', handleResize);
+
+      const loop = (now: number) => {
+        renderer!.render(now);
+        animationFrameId = requestAnimationFrame(loop);
+      };
+      loop(0);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        cancelAnimationFrame(animationFrameId);
+        renderer!.reset();
+      };
+    } catch {
+      return undefined;
+    }
   }, []);
 
   useEffect(() => {
