@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
@@ -11,11 +11,29 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+
+  // Handle Google OAuth redirect (token in URL) or invite auto-signup
+  useEffect(() => {
+    const token = searchParams?.get('token');
+    const name = searchParams?.get('name');
+    if (token) {
+      localStorage.setItem('auth_token', token);
+      if (name) localStorage.setItem('user_name', name);
+      toast.success(`Welcome${name ? `, ${decodeURIComponent(name)}` : ''}`);
+      router.push('/');
+      return;
+    }
+    const invite = searchParams?.get('invite');
+    if (invite) {
+      setMode('signup');
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
