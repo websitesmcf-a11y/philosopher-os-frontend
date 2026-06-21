@@ -246,7 +246,7 @@ export default function HermesPage() {
             { label: 'Concurrency', value: `${health.max_concurrent - health.semaphore_available}/${health.max_concurrent}`, color: '#8B5CF6', icon: Zap },
             { label: 'DB', value: health.database_connected ? 'Connected' : 'Error', color: health.database_connected ? '#10B981' : '#EF4444', icon: health.database_connected ? CheckCircle : AlertTriangle },
           ].map(stat => (
-            <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 14px', display: 'flex', align: 'center', gap: 8 }}>
+            <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <stat.icon size={14} color={stat.color} style={{ marginTop: 2 }} />
               <div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{stat.label}</div>
