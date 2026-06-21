@@ -243,6 +243,9 @@ export interface LeadList {
   created_by?: string;
   lead_count: number;
   is_archived: boolean;
+  locked: boolean;
+  locked_by?: string | null;
+  locked_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -274,6 +277,29 @@ export async function removeLeadFromList(listId: string, leadId: string): Promis
 // Mark leads in a list as reserved by a campaign — locks them from the general pool
 export async function reserveLeadList(listId: string, campaignId: string): Promise<{ reserved: number }> {
   return request(`/lead-lists/${listId}/reserve`, { method: 'POST', body: { campaign_id: campaignId } });
+}
+
+export async function lockLeadList(listId: string): Promise<{ locked: boolean; message: string }> {
+  return request(`/lead-lists/${listId}/lock`, { method: 'POST' });
+}
+
+export async function unlockLeadList(listId: string): Promise<{ locked: boolean; message: string }> {
+  return request(`/lead-lists/${listId}/unlock`, { method: 'POST' });
+}
+
+export interface CleanupLeadListResult {
+  removed: number;
+  remaining: number;
+  total_before: number;
+  criteria: string[];
+  message: string;
+}
+
+export async function cleanupLeadList(
+  listId: string,
+  opts: { remove_no_phone?: boolean; remove_no_email?: boolean },
+): Promise<CleanupLeadListResult> {
+  return request(`/lead-lists/${listId}/cleanup`, { method: 'POST', body: opts });
 }
 
 // ─── Clients ─────────────────────────────────────────
