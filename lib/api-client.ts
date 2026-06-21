@@ -3,7 +3,7 @@
  */
 import { supabase } from './supabase';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
 
 // ─── Typed error hierarchy ──────────────────────────
 
@@ -48,7 +48,8 @@ type RequestOptions = {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, params, headers = {}, signal } = opts;
 
-  let url = `${API_BASE}${path}`;
+  const normalizedPath = path.endsWith('/') || path.includes('?') ? path : path + '/';
+  let url = `${API_BASE}${normalizedPath}`;
   if (params) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -242,9 +243,6 @@ export interface LeadList {
   created_by?: string;
   lead_count: number;
   is_archived: boolean;
-  locked: boolean;
-  locked_by?: string | null;
-  locked_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -276,29 +274,6 @@ export async function removeLeadFromList(listId: string, leadId: string): Promis
 // Mark leads in a list as reserved by a campaign — locks them from the general pool
 export async function reserveLeadList(listId: string, campaignId: string): Promise<{ reserved: number }> {
   return request(`/lead-lists/${listId}/reserve`, { method: 'POST', body: { campaign_id: campaignId } });
-}
-
-export async function lockLeadList(listId: string): Promise<{ locked: boolean; message: string }> {
-  return request(`/lead-lists/${listId}/lock`, { method: 'POST' });
-}
-
-export async function unlockLeadList(listId: string): Promise<{ locked: boolean; message: string }> {
-  return request(`/lead-lists/${listId}/unlock`, { method: 'POST' });
-}
-
-export interface CleanupLeadListResult {
-  removed: number;
-  remaining: number;
-  total_before: number;
-  criteria: string[];
-  message: string;
-}
-
-export async function cleanupLeadList(
-  listId: string,
-  opts: { remove_no_phone?: boolean; remove_no_email?: boolean },
-): Promise<CleanupLeadListResult> {
-  return request(`/lead-lists/${listId}/cleanup`, { method: 'POST', body: opts });
 }
 
 // ─── Clients ─────────────────────────────────────────
@@ -339,19 +314,6 @@ export async function pauseCampaign(id: string): Promise<{ paused: boolean }> {
 
 export async function deleteCampaign(id: string): Promise<{ deleted: boolean }> {
   return request(`/campaigns/${id}`, { method: 'DELETE' });
-}
-
-export interface CampaignLead {
-  id: string; name: string; phone?: string; email?: string; company?: string;
-  status: string; sent_at?: string | null; replied_at?: string | null;
-}
-
-export async function getCampaign(id: string): Promise<Campaign> {
-  return request(`/campaigns/${id}`);
-}
-
-export async function getCampaignLeads(id: string, statusFilter?: string): Promise<{ items: CampaignLead[]; total: number }> {
-  return request(`/campaigns/${id}/leads`, { params: statusFilter ? { status: statusFilter } : undefined });
 }
 
 // ─── Calendar ─────────────────────────────────────────
@@ -453,7 +415,7 @@ export async function* chatStream(
   conversationId?: string,
   signal?: AbortSignal,
 ): AsyncGenerator<SSEEvent> {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
   const response = await fetch(`${API_BASE}/chat/stream`, {
@@ -641,7 +603,7 @@ export async function saveConnection(
   provider: string,
   secrets: Record<string, string>,
   config: Record<string, string>
-): Promise<{ provider: string; status: string; detail: string; token?: string }> {
+): Promise<{ provider: string; status: string; detail: string }> {
   return request(`/connections/${provider}`, { method: 'POST', body: { secrets, config } });
 }
 
@@ -708,10 +670,6 @@ export async function fixCampaignStatuses(): Promise<FixCampaignsResult> {
 }
 
 // ─── Beast Mode ───────────────────────────────────────────
-export async function getBrowserHarnessStatus(): Promise<{ connected: boolean; available: boolean; browser?: string; cdp?: boolean }> {
-  return request('/browser-harness/status');
-}
-
 export async function planBeastMission(objective: string, agents: string[], mode: string): Promise<any> {
   return request('/beast-mode/plan', { method: 'POST', body: { objective, agents, mode } });
 }
@@ -731,91 +689,4 @@ export async function controlBeastMission(missionId: string, action: string) {
 export async function getBeastMission(missionId: string) {
   return request(`/beast-mode/${missionId}`);
 }
-// ─── Hermes Jobs ──────────────────────────────────────────
-
-export interface HermesJob {
-  id: string;
-  agent: string;
-  task: string;
-  task_type: string;
-  source: string;
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'retrying';
-  progress_percent: number;
-  progress_message: string | null;
-  current_step: string | null;
-  completed_steps: number;
-  total_steps: number | null;
-  result: any;
-  error: string | null;
-  org_id: string | null;
-  mission_id: string | null;
-  parent_job_id: string | null;
-  attempt_count: number;
-  max_attempts: number;
-  created_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-  logs?: HermesJobLog[];
-  children?: HermesJob[];
-}
-
-export interface HermesJobLog {
-  id: string;
-  level: 'debug' | 'info' | 'warning' | 'error' | 'success';
-  message: string;
-  metadata: Record<string, any>;
-  created_at: string;
-}
-
-export interface HermesSubmitRequest {
-  agent: string;
-  task: string;
-  task_type?: string;
-  source?: string;
-  input?: Record<string, any>;
-  priority?: number;
-  max_attempts?: number;
-  scheduled_for?: string;
-  mission_id?: string;
-  parent_job_id?: string;
-}
-
-export async function submitHermesJob(req: HermesSubmitRequest): Promise<{ job_id: string; status: string }> {
-  return request('/hermes/jobs', { method: 'POST', body: req });
-}
-
-export async function listHermesJobs(params?: {
-  status?: string; agent?: string; source?: string; mission_id?: string; limit?: number;
-}): Promise<{ jobs: HermesJob[] }> {
-  return request('/hermes/jobs', { params: params as any });
-}
-
-export async function getHermesJob(jobId: string): Promise<HermesJob> {
-  return request(`/hermes/jobs/${jobId}`);
-}
-
-export async function getHermesJobStatus(jobId: string): Promise<HermesJob> {
-  return request(`/hermes/status/${jobId}`);
-}
-
-export async function cancelHermesJob(jobId: string): Promise<{ job_id: string; status: string }> {
-  return request(`/hermes/jobs/${jobId}/cancel`, { method: 'POST' });
-}
-
-export async function retryHermesJob(jobId: string): Promise<{ job_id: string; status: string }> {
-  return request(`/hermes/jobs/${jobId}/retry`, { method: 'POST' });
-}
-
-export async function getHermesJobLogs(jobId: string, level?: string): Promise<{ logs: HermesJobLog[]; count: number }> {
-  return request(`/hermes/jobs/${jobId}/logs`, { params: level ? { level } : undefined });
-}
-
-export async function getHermesHealth(): Promise<{
-  status: string; max_concurrent: number; running_jobs: number;
-  queued_jobs: number; failed_jobs: number; total_in_memory: number;
-  database_connected: boolean; semaphore_available: number;
-}> {
-  return request('/hermes/health');
-}
-
 // build-fresh-1781604165
