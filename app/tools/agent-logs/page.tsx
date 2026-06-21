@@ -317,7 +317,7 @@ export default function AgentRunLogsPage() {
   // ── Render ────────────────────────────────────────
 
   return (
-    <div className="page-content">
+    <div className="page-content page-bg-sentinel">
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
 
       <PageHeader

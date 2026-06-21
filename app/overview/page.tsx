@@ -8,8 +8,9 @@ import {
 import { formatCurrency } from '@/lib/api-client';
 import {
   Activity, BarChart3, CheckCircle2, DollarSign, Megaphone,
-  MessageSquare, Target, Users,
+  MessageSquare, Target, Users, Monitor,
 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { usePageTitle } from '@/lib/use-page-title';
 
@@ -68,11 +69,11 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="page-content page-enter">
+      <div className="page-content page-bg-command page-enter">
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>CEO Dashboard</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 500, margin: 0, fontFamily: 'var(--font-heading)' }}>CEO Dashboard</h1>
         </div>
-        <div className="card etched-surface" style={{ padding: 40, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
           <p style={{ color: '#ef4444' }}>Failed to load dashboard data. Please try again later.</p>
         </div>
       </div>
@@ -130,14 +131,13 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="page-content page-enter">
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>CEO Dashboard</h1>
-        <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-          Real-time overview of your agency operations
-        </p>
-      </div>
+    <div className="page-content page-bg-command page-enter">
+      <PageHeader
+        title="CEO Dashboard"
+        description="Real-time overview of your agency operations"
+        icon={Monitor}
+        iconColor="#123C69"
+      />
 
       {/* Stat cards */}
       <div style={{

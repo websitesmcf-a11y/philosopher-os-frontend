@@ -6,6 +6,7 @@ import { listConversations } from '@/lib/api-client';
 import { MessageSquare, Search, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
+import { PageHeader } from '@/components/ui/page-header';
 
 const CHANNEL_ICONS: Record<string, string> = {
   whatsapp: '#4A6741', email: '#3B5E7A', web: '#735C00', sms: '#7A543B',
@@ -24,13 +25,13 @@ export default function ConversationsPage() {
   const conversations = data?.items ?? [];
 
   return (
-    <div className="page-content page-enter">
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Conversations</h1>
-        <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-          All client and lead conversations across channels
-        </p>
-      </div>
+    <div className="page-content page-bg-herald page-enter">
+      <PageHeader
+        title="Conversations"
+        description="All client and lead conversations across channels"
+        icon={MessageSquare}
+        iconColor="#123C69"
+      />
 
       <div style={{ position: 'relative', maxWidth: 320, marginBottom: 16 }}>
         <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />

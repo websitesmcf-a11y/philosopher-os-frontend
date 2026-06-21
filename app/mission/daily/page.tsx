@@ -107,7 +107,7 @@ Keep it direct and actionable. This is a command briefing, not a discussion.`;
   };
 
   return (
-    <div className="page-content" style={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
+    <div className="page-content page-bg-command" style={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
       <PageHeader
         title="Daily Command"
         description="Your daily mission briefing and execution plan"

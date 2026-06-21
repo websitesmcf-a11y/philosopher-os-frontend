@@ -180,7 +180,7 @@ export default function WebhooksSettingsPage() {
 
   if (!loaded) {
     return (
-      <div className="page-content fade-in">
+      <div className="page-content page-bg-marble fade-in">
         <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
           <ArrowLeft size={14} /> Back to Settings
         </Link>
@@ -192,14 +192,14 @@ export default function WebhooksSettingsPage() {
   }
 
   return (
-    <div className="page-content fade-in">
+    <div className="page-content page-bg-marble fade-in">
       <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
         <ArrowLeft size={14} /> Back to Settings
       </Link>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Webhooks</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 500, margin: 0, fontFamily: 'var(--font-heading)' }}>Webhooks</h1>
           <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
             Configure outgoing webhooks
           </p>

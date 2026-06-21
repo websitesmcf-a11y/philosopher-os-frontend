@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { CreateDialog } from '@/components/create-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 const STATUS_COLOR: Record<string, string> = {
   draft: '#94a3b8',
@@ -88,24 +89,23 @@ export default function FinancePage() {
   });
 
   return (
-    <div className="page-content page-enter">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Finance</h1>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Revenue, MRR breakdown, and invoicing
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost" onClick={() => setRevenueDialogOpen(true)}>
-            <Plus size={16} /> Log Revenue
-          </button>
-          <button className="btn btn-primary" onClick={() => setInvoiceDialogOpen(true)}>
-            <Plus size={16} /> Add Invoice
-          </button>
-        </div>
-      </div>
+    <div className="page-content page-bg-treasury page-enter">
+      <PageHeader
+        title="Finance"
+        description="Revenue, MRR breakdown, and invoicing"
+        icon={Wallet}
+        iconColor="#22c55e"
+        actions={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={() => setRevenueDialogOpen(true)}>
+              <Plus size={16} /> Log Revenue
+            </button>
+            <button className="btn btn-primary" onClick={() => setInvoiceDialogOpen(true)}>
+              <Plus size={16} /> Add Invoice
+            </button>
+          </div>
+        }
+      />
 
       {/* Invoice creation modal */}
       <CreateDialog

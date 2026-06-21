@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Image from 'next/image';
 import { toast } from 'sonner';
-import { LogIn, Loader2, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { PALETTE } from '@/lib/design-tokens';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
 
@@ -44,216 +45,271 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      minHeight: '100vh', padding: 24, position: 'relative',
-      background: PALETTE.background,
+      display: 'flex', minHeight: '100vh', position: 'relative',
+      background: 'var(--ivory-1)',
     }}>
-      {/* Decorative background gradient */}
+      {/* Left panel — brand hero */}
       <div style={{
-        position: 'absolute', inset: 0,
-        background: `radial-gradient(circle at 30% 20%, ${PALETTE.accent}08 0%, transparent 60%),
-                     radial-gradient(circle at 70% 80%, ${PALETTE.gold}08 0%, transparent 60%)`,
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{
-        width: '100%', maxWidth: 440,
-        position: 'relative',
-        background: '#FFFFFF',
-        border: `1px solid var(--border)`,
-        borderRadius: 12,
-        padding: '48px 40px',
-        boxShadow: '0 8px 30px rgba(23,26,33,0.08)',
+        flex: 1, display: 'flex', flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '48px 56px',
+        position: 'relative', overflow: 'hidden',
       }}>
+        {/* Marble background image */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'url(/assets/philosopher-os/backgrounds/login-bg.jpg)',
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: 0.55,
+        }} />
+        {/* Overlay gradient */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(135deg, rgba(246,240,227,0.85) 0%, rgba(18,60,105,0.35) 100%)',
+        }} />
+
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 12,
-            background: `linear-gradient(135deg, ${PALETTE.accent}, ${PALETTE.gold})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, fontWeight: 800, color: '#FFFFFF',
-            fontFamily: 'var(--font-heading)',
-            margin: '0 auto 20px',
-          }}>
-            Φ
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Image
+            src="/assets/philosopher-os/logo/temple-emblem.svg"
+            alt="Philosopher OS"
+            width={48}
+            height={48}
+          />
+          <div>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 20, fontWeight: 700, color: 'var(--navy)', letterSpacing: '0.02em', lineHeight: 1 }}>
+              PHILOSOPHER OS
+            </div>
+            <div style={{ fontFamily: 'var(--font-label)', fontSize: 10, letterSpacing: '0.20em', textTransform: 'uppercase', color: 'var(--gold)', marginTop: 4 }}>
+              Ultimate AI CRM
+            </div>
           </div>
+        </div>
+
+        {/* Hero copy */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
           <h1 style={{
-            fontSize: 28, fontWeight: 500, margin: 0,
-            fontFamily: 'var(--font-heading)',
-            color: PALETTE.foreground,
+            fontFamily: 'var(--font-heading)', fontSize: 52, fontWeight: 500,
+            color: 'var(--navy)', lineHeight: 1.15, letterSpacing: '-0.01em',
+            marginBottom: 20,
           }}>
-            Philosopher OS
+            Think with<br />philosophers.
           </h1>
           <p style={{
-            fontSize: 13, color: 'var(--foreground-secondary)',
-            marginTop: 8,
-            fontFamily: 'var(--font-body)',
+            fontFamily: 'var(--font-heading)', fontStyle: 'italic',
+            fontSize: 28, color: 'var(--gold)', lineHeight: 1.3,
+            marginBottom: 32,
           }}>
-            {mode === 'login' ? 'Sign in to the Council' : 'Create your workspace'}
+            Execute with gods.
           </p>
-        </div>
+          <p style={{ fontSize: 16, color: 'var(--ink-2)', maxWidth: 380, lineHeight: 1.7 }}>
+            The ultimate AI-powered CRM for lead generation, outreach, campaigns, tasks, and business growth.
+          </p>
 
-        {/* Mode tabs */}
-        <div style={{
-          display: 'flex', borderRadius: 6,
-          background: 'var(--surface-inset)',
-          marginBottom: 28, padding: 4,
-        }}>
-          <button
-            onClick={() => setMode('login')}
-            style={{
-              flex: 1, padding: '8px 16px', borderRadius: 4,
-              border: 'none', cursor: 'pointer',
-              fontSize: 14, fontWeight: 600,
-              fontFamily: 'var(--font-body)',
-              background: mode === 'login' ? '#FFFFFF' : 'transparent',
-              color: mode === 'login' ? PALETTE.accent : 'var(--foreground-secondary)',
-              boxShadow: mode === 'login' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.2s',
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setMode('signup')}
-            style={{
-              flex: 1, padding: '8px 16px', borderRadius: 4,
-              border: 'none', cursor: 'pointer',
-              fontSize: 14, fontWeight: 600,
-              fontFamily: 'var(--font-body)',
-              background: mode === 'signup' ? '#FFFFFF' : 'transparent',
-              color: mode === 'signup' ? PALETTE.accent : 'var(--foreground-secondary)',
-              boxShadow: mode === 'signup' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.2s',
-            }}
-          >
-            Create Account
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <label style={{
-              fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6,
-              color: 'var(--foreground-secondary)',
-              fontFamily: 'var(--font-label)',
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-            }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@agency.com"
-              required
-              autoFocus
-            />
-          </div>
-          <div>
-            <label style={{
-              fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6,
-              color: 'var(--foreground-secondary)',
-              fontFamily: 'var(--font-label)',
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-            }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-          {mode === 'signup' && (
-            <div>
-              <label style={{
-                fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6,
-                color: 'var(--foreground-secondary)',
-                fontFamily: 'var(--font-label)',
-                textTransform: 'uppercase', letterSpacing: '0.06em',
+          {/* Feature chips */}
+          <div style={{ display: 'flex', gap: 12, marginTop: 32, flexWrap: 'wrap' }}>
+            {['Strategic Minds', 'Execution Gods', 'Your Data, Private'].map((f) => (
+              <div key={f} style={{
+                padding: '8px 16px',
+                background: 'rgba(18, 60, 105, 0.08)',
+                border: '1px solid rgba(18, 60, 105, 0.15)',
+                borderRadius: 'var(--radius-pill)',
+                fontSize: 13, fontWeight: 500,
+                color: 'var(--navy)',
+                fontFamily: 'var(--font-body)',
               }}>
-                Workspace Name
-              </label>
-              <input
-                type="text"
-                placeholder="My Agency"
-              />
-            </div>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary btn-lg"
-            style={{
-              width: '100%', marginTop: 8,
-              justifyContent: 'center',
-            }}
-          >
-            {loading ? (
-              <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> {mode === 'login' ? 'Signing in...' : 'Creating account...'}</>
-            ) : (
-              <><LogIn size={18} /> {mode === 'login' ? 'Sign In' : 'Create Account'}</>
-            )}
-          </button>
-        </form>
+                {f}
+              </div>
+            ))}
+          </div>
+        </div>
 
-        <p style={{
-          textAlign: 'center', marginTop: 24,
-          fontSize: 12, color: 'var(--muted)',
-        }}>
-          {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-          <button
-            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: PALETTE.accent, fontWeight: 600, fontSize: 12,
-            }}
-          >
-            {mode === 'login' ? 'Create one' : 'Sign in'}
-          </button>
-          {mode === 'login' && (
-            <>
-              {' '}or{' '}
-              <Link
-                href="/signup"
+        {/* Trust badges */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          {['Enterprise Security', 'Your Data, Your Control', 'Built for Growth'].map((b) => (
+            <div key={b} style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-label)', letterSpacing: '0.04em' }}>
+              {b}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div style={{
+        width: 480, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '48px 40px',
+        background: 'var(--navy-deep)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Celestial glow */}
+        <div style={{
+          position: 'absolute', top: '-20%', right: '-20%',
+          width: 400, height: 400, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(123,94,167,0.25) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-10%', left: '-10%',
+          width: 300, height: 300, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(201,162,77,0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 2 }}>
+          <h2 style={{
+            fontFamily: 'var(--font-heading)', fontSize: 28,
+            color: '#fff', fontWeight: 500, marginBottom: 6, lineHeight: 1.2,
+          }}>
+            Welcome back.
+          </h2>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginBottom: 32 }}>
+            Sign in to continue to your command center.
+          </p>
+
+          {/* Tabs */}
+          <div style={{
+            display: 'flex', gap: 0,
+            borderBottom: '1px solid rgba(255,255,255,0.12)',
+            marginBottom: 28,
+          }}>
+            {(['login', 'signup'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
                 style={{
+                  flex: 1, padding: '10px 0',
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: PALETTE.accent, fontWeight: 600, fontSize: 12,
-                  textDecoration: 'none',
+                  fontSize: 14, fontWeight: 600,
+                  color: mode === m ? '#fff' : 'rgba(255,255,255,0.45)',
+                  borderBottom: mode === m ? '2px solid var(--gold)' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  fontFamily: 'var(--font-body)',
+                  marginBottom: -1,
                 }}
               >
-                Create Account
-              </Link>
-            </>
-          )}
-        </p>
+                {m === 'login' ? 'Sign In' : 'Create Account'}
+              </button>
+            ))}
+          </div>
 
-        {/* Dev login hint */}
-        <div style={{
-          marginTop: 20, padding: '10px 14px',
-          background: PALETTE.gold + '10',
-          border: `1px solid ${PALETTE.gold}30`,
-          borderRadius: 6,
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <Sparkles size={14} color={PALETTE.gold} />
-          <span style={{ fontSize: 11, color: 'var(--foreground-secondary)' }}>
-            Dev: use <code style={{
-              background: 'rgba(0,0,0,0.05)', padding: '1px 5px',
-              borderRadius: 3, fontSize: 11, fontWeight: 600,
-            }}>admin@socrates.ai</code> / <code style={{
-              background: 'rgba(0,0,0,0.05)', padding: '1px 5px',
-              borderRadius: 3, fontSize: 11, fontWeight: 600,
-            }}>admin123</code>
-          </span>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {/* Email */}
+            <div style={{ position: 'relative' }}>
+              <Mail size={16} color="rgba(255,255,255,0.35)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Email address"
+                required
+                autoFocus
+                style={{
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#fff',
+                  borderRadius: 'var(--radius)',
+                  padding: '12px 14px 12px 42px',
+                  fontSize: 14, width: '100%',
+                  fontFamily: 'var(--font-body)',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => { e.target.style.borderColor = 'rgba(201,162,77,0.5)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            {/* Password */}
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} color="rgba(255,255,255,0.35)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+                style={{
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#fff',
+                  borderRadius: 'var(--radius)',
+                  padding: '12px 42px 12px 42px',
+                  fontSize: 14, width: '100%',
+                  fontFamily: 'var(--font-body)',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => { e.target.style.borderColor = 'rgba(201,162,77,0.5)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', padding: 2 }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%', marginTop: 8,
+                padding: '14px',
+                background: 'linear-gradient(180deg, var(--navy-bright), var(--navy))',
+                color: '#fff', border: '1px solid var(--navy)',
+                borderRadius: 'var(--radius)',
+                fontSize: 15, fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 2px 12px rgba(18,60,105,0.4)',
+                fontFamily: 'var(--font-body)',
+                letterSpacing: '0.02em',
+                transition: 'opacity 0.2s',
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading
+                ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> {mode === 'login' ? 'Signing in…' : 'Creating…'}</>
+                : <>{mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'} <ArrowRight size={16} /></>
+              }
+            </button>
+
+            {/* Forgot */}
+            {mode === 'login' && (
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-bright)', fontSize: 13, fontFamily: 'var(--font-body)' }}>
+                  Forgot password?
+                </button>
+              </div>
+            )}
+          </form>
+
+          {/* Trust note */}
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 28, textAlign: 'center', lineHeight: 1.6 }}>
+            Your CRM data stays private to your account. We never share your data.
+          </p>
+
+          {/* Dev hint */}
+          <div style={{
+            marginTop: 16, padding: '10px 14px',
+            background: 'rgba(201,162,77,0.10)',
+            border: '1px solid rgba(201,162,77,0.25)',
+            borderRadius: 'var(--radius-sm)',
+          }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>
+              Dev: <code style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 5px', borderRadius: 3, fontSize: 11 }}>admin@socrates.ai</code> / <code style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 5px', borderRadius: 3, fontSize: 11 }}>admin123</code>
+            </span>
+          </div>
         </div>
       </div>
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        input::placeholder { color: rgba(255,255,255,0.30) !important; }
       `}</style>
     </div>
   );

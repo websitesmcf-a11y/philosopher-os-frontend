@@ -435,7 +435,7 @@ export default function TeamSettingsPage() {
 
   if (loading) {
     return (
-      <div className="page-content fade-in">
+      <div className="page-content page-bg-marble fade-in">
         <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
           <ArrowLeft size={14} /> Back to Settings
         </Link>
@@ -449,7 +449,7 @@ export default function TeamSettingsPage() {
 
   if (error && members.length === 0) {
     return (
-      <div className="page-content fade-in">
+      <div className="page-content page-bg-marble fade-in">
         <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
           <ArrowLeft size={14} /> Back to Settings
         </Link>
@@ -471,14 +471,14 @@ export default function TeamSettingsPage() {
   }
 
   return (
-    <div className="page-content page-enter">
+    <div className="page-content page-bg-marble page-enter">
       <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
         <ArrowLeft size={14} /> Back to Settings
       </Link>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Team</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 500, margin: 0, fontFamily: 'var(--font-heading)' }}>Team</h1>
           <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
             Manage team members and roles
           </p>

@@ -5,6 +5,7 @@ import { getDashboardMetrics, getWeekly, formatCurrency } from '@/lib/api-client
 import { BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { usePageTitle } from '@/lib/use-page-title';
+import { PageHeader } from '@/components/ui/page-header';
 
 function ChartEmptyState({ message }: { message: string }) {
   return (
@@ -29,11 +30,9 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="page-content page-enter">
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Analytics</h1>
-        </div>
-        <div className="etched-surface" style={{ padding: 40, textAlign: 'center' }}>
+      <div className="page-content page-bg-oracle page-enter">
+        <PageHeader title="Analytics" icon={BarChart3} iconColor="#123C69" />
+        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
           <p style={{ color: '#ef4444' }}>Failed to load analytics. Please try again later.</p>
         </div>
       </div>
@@ -41,13 +40,13 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="page-content page-enter">
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Analytics</h1>
-        <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-          Deep dive into performance metrics
-        </p>
-      </div>
+    <div className="page-content page-bg-oracle page-enter">
+      <PageHeader
+        title="Analytics"
+        description="Deep dive into performance metrics"
+        icon={BarChart3}
+        iconColor="#123C69"
+      />
 
       {/* Data source notice */}
       <div style={{

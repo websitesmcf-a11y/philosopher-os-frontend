@@ -16,6 +16,20 @@ interface Props {
  */
 export function PhilosopherLayout({ children }: Props) {
   const pathname = usePathname();
+  const isOmega = pathname.startsWith('/omega');
+
+  if (isOmega) {
+    // Omega pages: pure black — no decorative overlays, no textures, no gradients
+    return (
+      <div
+        key={pathname}
+        className="page-enter"
+        style={{ position: 'relative', zIndex: 2, minHeight: '100%', background: '#000000' }}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -52,8 +66,8 @@ export function PhilosopherLayout({ children }: Props) {
       <div
         style={{
           position: 'fixed',
-          top: 56, /* below topbar */
-          left: 250, /* sidebar width */
+          top: 56,
+          left: 250,
           width: 40,
           height: 40,
           borderTop: '1px solid rgba(201, 162, 77, 0.08)',

@@ -44,7 +44,7 @@ export default function PhilosophersPage() {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content page-bg-oracle">
       <PageHeader
         title="Philosopher Council"
         description="10 specialized strategic intelligence agents — they think, plan, judge, structure, and govern"

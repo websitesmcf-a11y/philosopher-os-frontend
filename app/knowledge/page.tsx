@@ -7,6 +7,7 @@ import { searchKnowledge, addKnowledge, deleteKnowledge, uploadKnowledgeFile } f
 import { BookOpen, Search, Plus, FileText, Trash2, Upload, Loader2 } from 'lucide-react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { CreateDialog } from '@/components/create-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default function KnowledgePage() {
   usePageTitle('Knowledge Base');
@@ -47,15 +48,14 @@ export default function KnowledgePage() {
   const results = data?.items ?? [];
 
   return (
-    <div className="page-content page-enter">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Knowledge Base</h1>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Search and manage your agency knowledge
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+    <div className="page-content page-bg-treasury page-enter">
+      <PageHeader
+        title="Knowledge Base"
+        description="Search and manage your agency knowledge"
+        icon={BookOpen}
+        iconColor="#123C69"
+        actions={
+          <div style={{ display: 'flex', gap: 8 }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -84,7 +84,8 @@ export default function KnowledgePage() {
             <Plus size={16} /> Add Article
           </button>
         </div>
-      </div>
+        }
+      />
 
       <CreateDialog
         open={dialogOpen}

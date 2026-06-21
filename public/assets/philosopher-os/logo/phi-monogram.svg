@@ -1,0 +1,10 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Philosopher OS monogram">
+  <defs>
+    <linearGradient id="phiTile" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A5088"></stop>
+      <stop offset="1" stop-color="#C9A24D"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="116" height="116" rx="24" fill="url(#phiTile)"></rect>
+  <text x="60" y="62" text-anchor="middle" dominant-baseline="central" font-family="&#39;EB Garamond&#39;, Georgia, serif" font-size="76" font-weight="600" fill="#FCF8F0">Φ</text>
+</svg>

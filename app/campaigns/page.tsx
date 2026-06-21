@@ -6,7 +6,7 @@ import { listCampaigns, createCampaign, launchCampaign, pauseCampaign, deleteCam
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Target, Plus, Search, Play, Pause, Trash2, Loader2, MessageSquare, Layers, Lock, ChevronDown } from 'lucide-react';
+import { Target, Plus, Search, Play, Pause, Trash2, Loader2, MessageSquare, Layers, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -25,10 +25,7 @@ export default function CampaignsPage() {
   const [showCustomCmd, setShowCustomCmd] = useState<string | null>(null);
   const [customCmd, setCustomCmd] = useState('');
   const [showLoading, setShowLoading] = useState<'create' | 'launch' | null>(null);
-  const [form, setForm] = useState({
-    name: '', channel: 'whatsapp', message_template: '', objective: '',
-    leadListId: '', intervalMin: 20, intervalMax: 30, senderName: ''
-  });
+  const [form, setForm] = useState({ name: '', channel: 'whatsapp', message_template: '', objective: '', leadListId: '' });
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -70,9 +67,6 @@ export default function CampaignsPage() {
     if (!form.name) { toast.error('Campaign name is required'); return; }
     if (!form.message_template) { toast.error('A message template is required — what will the campaign say?'); return; }
     if (!form.leadListId) { toast.error('Select a lead list for this campaign'); return; }
-    if (!form.senderName) { toast.error('Enter your name — it replaces [Your Name] in the template.'); return; }
-    const intervalMin = Math.min(form.intervalMin, form.intervalMax);
-    const intervalMax = Math.max(form.intervalMin, form.intervalMax);
     setShowLoading('create');
     try {
       const campaign = await createCampaign({
@@ -80,22 +74,14 @@ export default function CampaignsPage() {
         channel: form.channel,
         message_template: form.message_template,
         status: 'draft',
-        lead_list_id: form.leadListId,
-        schedule_config: {
-          interval_min_minutes: intervalMin,
-          interval_max_minutes: intervalMax,
-          sender_name: form.senderName,
-        },
-        target_count: 0,
+        metadata: { lead_list_id: form.leadListId },
       } as any);
-      toast.success(`Campaign "${form.name}" created!`);
+      toast.success(`Campaign "${form.name}" created! Launch it when ready.`);
       setShowCreate(false);
-      setForm({ name: '', channel: 'whatsapp', message_template: '', objective: '', leadListId: '', intervalMin: 20, intervalMax: 30, senderName: '' });
+      setForm({ name: '', channel: 'whatsapp', message_template: '', objective: '', leadListId: '' });
       invalidate();
     } catch (e: any) {
-      console.error('Campaign create error:', e);
-      const msg = e?.detail || e?.message || e?.toString?.() || 'Failed to create campaign';
-      toast.error(msg);
+      toast.error(e?.detail || 'Failed to create campaign');
     } finally {
       setShowLoading(null);
     }
@@ -124,7 +110,7 @@ export default function CampaignsPage() {
           <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 28, marginTop: 16, fontWeight: 300 }}>{loadProgress}%</p>
         </div>
       </div>
-      <div className={`page-content ${enterLoading ? '' : 'fade-in'}`}>
+      <div className={`page-content page-bg-command ${enterLoading ? '' : 'fade-in'}`}>
       <PageHeader
         title="Campaigns"
         description="Create and manage outreach campaigns"
@@ -202,27 +188,6 @@ export default function CampaignsPage() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                  Your Name <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>This replaces <code style={{ background: 'rgba(0,0,0,0.1)', padding: '1px 4px', borderRadius: 3 }}>[Your Name]</code> in your template.</p>
-                <input value={form.senderName} onChange={e => setForm(f => ({ ...f, senderName: e.target.value }))} placeholder="e.g., Felet" />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                  Send Interval <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(random delay between messages)</span>
-                </label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input type="number" min={1} value={form.intervalMin} onChange={e => setForm(f => ({ ...f, intervalMin: Math.max(1, parseInt(e.target.value) || 1) }))}
-                    style={{ width: 80 }} />
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>to</span>
-                  <input type="number" min={1} value={form.intervalMax} onChange={e => setForm(f => ({ ...f, intervalMax: Math.max(1, parseInt(e.target.value) || 1) }))}
-                    style={{ width: 80 }} />
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>minutes</span>
-                </div>
-                <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Each message is sent at a random time within this range — makes outreach feel human and avoids spam flags.</p>
-              </div>
-              <div>
                 <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Objective (optional)</label>
                 <input value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))} placeholder="e.g., Generate plumbing leads" />
               </div>
@@ -292,12 +257,12 @@ export default function CampaignsPage() {
                 const leadListId = c.lead_list_id || c.extra_data?.lead_list_id;
                 const foundList = leadListId ? leadLists.find(ll => ll.id === leadListId) : null;
                 return (
-                <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => router.push(`/campaigns/${c.id}`)} onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.02)'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                <tr key={c.id}>
                   <td style={{ fontWeight: 500 }}>{c.name}</td>
                   <td style={{ fontSize: 12, color: 'var(--foreground-secondary)' }}>{c.channel}</td>
                   <td>
                     {foundList ? (
-                      <Link href={`/lead-lists/${foundList.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                      <Link href={`/lead-lists/${foundList.id}`} style={{ textDecoration: 'none' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(111,125,79,0.1)', color: '#6F7D4F', fontWeight: 500 }}>
                           <Layers size={11} /> {foundList.name}
                         </span>
@@ -311,7 +276,7 @@ export default function CampaignsPage() {
                   <td><StatusBadge status={c.status} /></td>
                   <td>{c.sent_count ?? 0}</td>
                   <td>{c.reply_count ?? 0}</td>
-                  <td onClick={e => e.stopPropagation()}>
+                  <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       {c.status === 'draft' && (
                         <button className="btn btn-sm btn-primary" onClick={() => { setShowLoading('launch'); launchMut.mutate(c.id, { onSettled: () => setShowLoading(null) }); }}
@@ -325,9 +290,9 @@ export default function CampaignsPage() {
                           {pauseMut.isPending ? <Loader2 size={12} /> : <Pause size={12} />}
                         </button>
                       )}
-                      <button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); router.push(`/campaigns/${c.id}`); }}
-                        title="View campaign details">
-                        <ChevronDown size={12} />
+                      <button className="btn btn-sm" onClick={() => { setShowCustomCmd(c.id); setCustomCmd(''); }}
+                        title="Send custom command to this campaign">
+                        <MessageSquare size={12} />
                       </button>
                       <button className="btn btn-sm btn-danger" onClick={() => { if (confirm(`Delete "${c.name}"?`)) deleteMut.mutate(c.id); }}
                         disabled={deleteMut.isPending} title="Delete campaign">

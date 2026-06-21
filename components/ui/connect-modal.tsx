@@ -4,8 +4,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import Image from 'next/image';
 import { X, Loader2, Plug, Lock, AlertTriangle, MessageCircle } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
-const BACKEND_ORIGIN = process.env.NEXT_PUBLIC_WS_URL || 'https://web-production-a93f0.up.railway.app';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type FieldKind = 'secret' | 'config';
 
@@ -122,23 +121,6 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
       { name: 'page_id', label: 'Page ID', kind: 'config', type: 'text', required: true },
     ],
   },
-  'browser-harness': {
-    image: `${CARD_BASE}/integration-browser.jpg`,
-    backendProvider: 'browser_harness',
-    instructions: [
-      { text: 'Step 1 — Install the browser-harness CLI from the hermes-agent repo:' },
-      { code: true, text: 'git clone https://github.com/NousResearch/hermes-agent.git\ncd hermes-agent\npython -m pip install -e ./browser-harness\n# Verify: browser-harness --version' },
-      { text: 'Step 2 — Download the Philosopher OS harness agent:' },
-      { code: true, text: 'curl -o philosopher-harness.py https://web-production-a93f0.up.railway.app/api/v1/browser-harness/agent-script' },
-      { text: 'Step 3 — Save below to generate a token, then run the command that appears:' },
-      { text: 'Step 4 (optional) — Make it auto-start on PC boot:' },
-      { code: true, text: 'python philosopher-harness.py --install --url https://web-production-a93f0.up.railway.app --token YOUR_TOKEN' },
-    ],
-    fields: [
-      { name: 'token', label: 'Token (auto-generated on save)', kind: 'secret', type: 'password' },
-    ],
-    note: 'The agent auto-launches Chrome if needed and reconnects instantly on network blips. Use --install for boot persistence. Keep the terminal open in foreground mode.',
-  },
   obsidian: {
     image: `${CARD_BASE}/integration-vault.jpg`,
     backendProvider: 'obsidian',
@@ -195,7 +177,6 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
   const [error, setError] = useState<string | null>(null);
   const [showWhatsAppTutorial, setShowWhatsAppTutorial] = useState(uiProvider === 'whatsapp');
   const [tutorialStep, setTutorialStep] = useState(0);
-  const [postConnect, setPostConnect] = useState<{ token: string; runCommand: string } | null>(null);
 
   // Seed defaults each time the modal opens for a given provider.
   const fieldsKey = spec ? spec.fields.map(f => `${f.name}=${f.defaultValue ?? ''}`).join('|') : '';
@@ -239,15 +220,7 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
           throw new Error(data?.detail || `Save failed (${resp.status})`);
         }
         if (data?.status && data.status !== 'connected') {
-          // For browser-harness, "disconnected" is expected (token saved, no live WS)
-          if (spec.backendProvider === 'browser_harness' && data.token) {
-            setPostConnect({
-              token: data.token,
-              runCommand: `python philosopher-harness.py --url ${BACKEND_ORIGIN} --token ${data.token}`,
-            });
-            setSubmitting(false);
-            return;
-          }
+          // Saved but not yet live (e.g. Google Calendar awaiting OAuth).
           throw new Error(data.detail || 'Saved, but the connection is not active yet.');
         }
       } else {
@@ -478,50 +451,8 @@ export function ConnectModal({ open, uiProvider, title, onClose, onConnected }: 
           </div>
         )}
 
-        {/* Post-connect token display for Browser Harness */}
-        {postConnect && (
-          <div style={{ padding: 24 }}>
-            <div style={{
-              padding: 16, borderRadius: 10,
-              background: 'rgba(18,60,105,0.06)', border: '1px solid rgba(18,60,105,0.2)',
-              marginBottom: 16,
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#123C69', marginBottom: 4 }}>
-                ✅ Token Generated
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--foreground-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
-                Copy and run this command in your computer's terminal to connect your browser:
-              </div>
-              <pre style={{
-                padding: '12px 14px', borderRadius: 8,
-                background: '#0f172a', color: '#e2e8f0',
-                fontFamily: 'var(--font-mono)', fontSize: 12,
-                whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-                marginBottom: 12, userSelect: 'all',
-              }}>
-                {postConnect.runCommand}
-              </pre>
-              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>
-                Keep the terminal window open. The agent auto-launches Chrome if needed and reconnects instantly on blips.
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, marginTop: 4 }}>
-                For boot persistence: run <code style={{ background: '#0f172a', padding: '2px 4px', borderRadius: 3, color: '#e2e8f0' }}>python philosopher-harness.py --install --url {BACKEND_ORIGIN} --token YOUR_TOKEN</code>
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="btn btn-primary" onClick={() => {
-                setPostConnect(null);
-                onConnected(uiProvider);
-                onClose();
-              }} style={{ padding: '8px 20px', fontSize: 13 }}>
-                Done
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Regular connect form (hidden during WhatsApp tutorial or post-connect) */}
-        {!showWhatsAppTutorial && !postConnect && (
+        {/* Regular connect form (hidden during WhatsApp tutorial) */}
+        {!showWhatsAppTutorial && (
         <form onSubmit={handleSubmit} style={{ padding: 24, overflowY: 'auto' }}>
           {/* Instructions with styled steps */}
           <div style={{

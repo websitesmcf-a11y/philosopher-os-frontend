@@ -3,9 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { listClients, listLeads, createClient, updateLead, formatCurrency, type ClientStatus } from '@/lib/api-client';
-import { Search, Plus, MoreHorizontal, X, Loader2, Check, ChevronDown } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, X, Loader2, Check, ChevronDown, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
+import { PageHeader } from '@/components/ui/page-header';
 
 const CONTRACT_STATUS_OPTIONS = [
   { label: 'Active', value: 'active' },
@@ -148,18 +149,18 @@ export default function ClientsPage() {
     : clients;
 
   return (
-    <div className="page-content page-enter">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Clients</h1>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Active client accounts and contracts
-          </p>
-        </div>
-        <button className="btn btn-primary" onClick={openDialog}>
-          <Plus size={16} /> Add Client
-        </button>
-      </div>
+    <div className="page-content page-bg-command page-enter">
+      <PageHeader
+        title="Clients"
+        description="Active client accounts and contracts"
+        icon={Building2}
+        iconColor="#123C69"
+        actions={
+          <button className="btn btn-primary" onClick={openDialog}>
+            <Plus size={16} /> Add Client
+          </button>
+        }
+      />
 
       {/* ─── Add Client Modal ─── */}
       {dialogOpen && (

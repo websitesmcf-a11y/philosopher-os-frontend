@@ -1,23 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePageTitle } from '@/lib/use-page-title';
 import { PageHeader } from '@/components/ui/page-header';
-import { ScanEye, Search, GitMerge, Shield, RefreshCw, PhoneOff, MailX, Loader2, CheckCircle2 } from 'lucide-react';
+import { ScanEye, Search, GitMerge, Shield, RefreshCw, Loader2 } from 'lucide-react';
 import {
   findDuplicateLeads,
   mergeDuplicateLeads,
   auditDataQuality,
   fixCampaignStatuses,
-  listLeadLists,
-  cleanupLeadList,
   type DuplicatesResult,
   type MergeResult,
   type AuditResult,
   type FixCampaignsResult,
-  type CleanupLeadListResult,
-  type LeadList,
 } from '@/lib/api-client';
 
 // ── Types ────────────────────────────────────────────
@@ -182,121 +178,6 @@ function ResultView({ result }: { result: CardResult }) {
 
 // ── Component ────────────────────────────────────────
 
-function CleanupContactlessCard() {
-  const [leadLists, setLeadLists] = useState<LeadList[]>([]);
-  const [selectedListId, setSelectedListId] = useState('');
-  const [removeNoPhone, setRemoveNoPhone] = useState(true);
-  const [removeNoEmail, setRemoveNoEmail] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CleanupLeadListResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    listLeadLists().then(d => setLeadLists(d.items)).catch(() => {});
-  }, []);
-
-  const handleRun = async () => {
-    if (!selectedListId) { toast.error('Select a lead list first'); return; }
-    if (!removeNoPhone && !removeNoEmail) { toast.error('Select at least one cleanup criteria'); return; }
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    try {
-      const res = await cleanupLeadList(selectedListId, {
-        remove_no_phone: removeNoPhone,
-        remove_no_email: removeNoEmail,
-      });
-      setResult(res);
-      toast.success(res.message);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Cleanup failed';
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="card" style={{ padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 8, background: '#ef444415', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <PhoneOff size={20} color="#ef4444" strokeWidth={1.5} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-heading)', margin: 0 }}>
-            Remove Contactless Leads
-          </h3>
-          <p style={{ fontSize: 12, color: 'var(--foreground-secondary)', marginTop: 2, lineHeight: 1.4 }}>
-            Remove leads without phone numbers or email from a lead list
-          </p>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 12 }}>
-        <select
-          value={selectedListId}
-          onChange={e => { setSelectedListId(e.target.value); setResult(null); }}
-          style={{ width: '100%', fontSize: 13 }}
-        >
-          <option value="">Choose a lead list...</option>
-          {leadLists.map(ll => (
-            <option key={ll.id} value={ll.id}>{ll.name} ({ll.lead_count} leads)</option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-          <input type="checkbox" checked={removeNoPhone} onChange={e => setRemoveNoPhone(e.target.checked)} />
-          <PhoneOff size={13} color="#ef4444" /> No phone
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-          <input type="checkbox" checked={removeNoEmail} onChange={e => setRemoveNoEmail(e.target.checked)} />
-          <MailX size={13} color="#f59e0b" /> No email
-        </label>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 12, borderTop: '0.5px solid var(--border-light)' }}>
-        <button className="btn btn-sm" onClick={handleRun} disabled={loading || !selectedListId}
-          style={{ minWidth: 80, justifyContent: 'center', background: loading ? undefined : 'rgba(239,68,68,0.1)', color: loading ? undefined : '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }}>
-          {loading ? (
-            <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Running</>
-          ) : (
-            <><PhoneOff size={14} /> Clean Up</>
-          )}
-        </button>
-      </div>
-
-      {loading && (
-        <div style={{ marginTop: 12, padding: 12, background: 'rgba(239,68,68,0.03)', borderRadius: 6, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--muted)' }}>
-          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-          Scanning leads...
-        </div>
-      )}
-
-      {!loading && error && (
-        <div style={{ marginTop: 12, padding: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, fontSize: 13, color: '#ef4444' }}>
-          {error}
-        </div>
-      )}
-
-      {!loading && result && (
-        <div style={{ marginTop: 12, padding: 12, background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 6, fontSize: 13 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: result.removed ? '#ef4444' : '#22c55e' }}>
-            {result.removed ? <PhoneOff size={14} /> : <CheckCircle2 size={14} />}
-            <strong>{result.removed ? `Removed ${result.removed} lead(s)` : 'Nothing to remove'}</strong>
-          </div>
-          <div style={{ color: 'var(--foreground-secondary)', fontSize: 12 }}>
-            <div>Before: {result.total_before} · Remaining: {result.remaining}</div>
-            <div>Criteria: {result.criteria.join(', ') || 'none'}</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function CrmCleanupPage() {
   usePageTitle('CRM Cleanup');
 
@@ -326,7 +207,7 @@ export default function CrmCleanupPage() {
   const hasAnyResult = Object.values(cardStates).some(s => s.result || s.error);
 
   return (
-    <div className="page-content">
+    <div className="page-content page-bg-sentinel">
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
 
       <PageHeader
@@ -349,7 +230,6 @@ export default function CrmCleanupPage() {
         gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
         gap: 16,
       }}>
-        <CleanupContactlessCard />
         {CARDS.map(card => {
           const state = getState(card.id);
           const Icon = card.icon;

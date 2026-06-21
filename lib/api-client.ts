@@ -819,4 +819,75 @@ export async function getHermesHealth(): Promise<{
   return request('/hermes/health');
 }
 
-// build-fresh-1781604165
+// ─── Strategeion Flows ──────────────────────────────────────────
+
+export interface FlowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: Record<string, unknown>;
+  width?: number;
+  height?: number;
+}
+
+export interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  label?: string;
+}
+
+export interface FlowData {
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+}
+
+export interface FlowItem {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  version: number;
+  run_count: number;
+  last_run_at: string | null;
+  last_run_status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  node_count: number;
+}
+
+export interface FlowDetail extends FlowItem {
+  data: FlowData;
+}
+
+export async function listFlows(params?: { status?: string; page?: number; page_size?: number }) {
+  return request<{ flows: FlowItem[]; total: number; page: number; page_size: number }>('/flows/', { params });
+}
+
+export async function createFlow(data: { name?: string; description?: string; data?: FlowData }) {
+  return request<{ id: string; name: string; status: string; message: string }>('/flows/', { method: 'POST', body: data });
+}
+
+export async function getFlow(flowId: string) {
+  return request<FlowDetail>(`/flows/${flowId}`);
+}
+
+export async function updateFlow(flowId: string, data: { name?: string; description?: string; status?: string; data?: FlowData }) {
+  return request<{ id: string; message: string }>(`/flows/${flowId}`, { method: 'PUT', body: data });
+}
+
+export async function deleteFlow(flowId: string) {
+  return request<{ message: string }>(`/flows/${flowId}`, { method: 'DELETE' });
+}
+
+export async function runFlow(flowId: string, nodeId?: string) {
+  return request<{ message: string; flow_id: string; job_ids: string[] }>(`/flows/${flowId}/run`, {
+    method: 'POST', body: { node_id: nodeId },
+  });
+}
+
+export async function duplicateFlow(flowId: string) {
+  return request<{ id: string; name: string; message: string }>(`/flows/${flowId}/duplicate`, { method: 'POST' });
+}

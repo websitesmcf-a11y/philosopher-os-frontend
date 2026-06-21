@@ -30,7 +30,7 @@ export default function GodsPage() {
   const router = useRouter();
 
   return (
-    <div className="page-content">
+    <div className="page-content page-bg-treasury">
       <PageHeader
         title="Gods & Titans"
         description="Powerful execution agents — they execute, automate, collect, contact, recover, and operate systems"

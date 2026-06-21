@@ -3,10 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { listTasks, createTask, updateTask, completeTask, deleteTask, type TaskStatus, type Priority } from '@/lib/api-client';
-import { Plus, Circle, CheckCircle2, Trash2, CalendarDays, Clock, Pencil } from 'lucide-react';
+import { Plus, Circle, CheckCircle2, Trash2, CalendarDays, Clock, Pencil, CheckSquare } from 'lucide-react';
 import { useState } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { CreateDialog } from '@/components/create-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 const PRIORITY_COLOR: Record<string, string> = {
   low: '#94a3b8', medium: '#3b82f6', high: '#f59e0b', critical: '#ef4444',
@@ -215,18 +216,18 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="page-content page-enter">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Tasks</h1>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Track and manage tasks
-          </p>
-        </div>
-        <button className="btn btn-primary" onClick={handleOpenCreate}>
-          <Plus size={16} /> New Task
-        </button>
-      </div>
+    <div className="page-content page-bg-sentinel page-enter">
+      <PageHeader
+        title="Tasks"
+        description="Track and manage tasks across your agents"
+        icon={CheckSquare}
+        iconColor="#123C69"
+        actions={
+          <button className="btn btn-primary" onClick={handleOpenCreate}>
+            <Plus size={16} /> New Task
+          </button>
+        }
+      />
 
       <CreateDialog
         open={dialogOpen}

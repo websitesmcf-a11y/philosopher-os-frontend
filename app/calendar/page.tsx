@@ -5,6 +5,7 @@ import { listTasks, listCalendarEvents, type Task } from '@/lib/api-client';
 import { useState, useMemo } from 'react';
 import { usePageTitle } from '@/lib/use-page-title';
 import { Calendar, Plus, Clock, User, ExternalLink, RefreshCw } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -567,24 +568,13 @@ export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState<Tab>('local');
 
   return (
-    <div className="page-content page-enter">
-      {/* Header */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        marginBottom: 28,
-      }}>
-        <div>
-          <h1 style={{
-            fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em',
-            margin: 0, fontFamily: 'var(--font-heading)',
-          }}>
-            Schedule
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Tasks and calendar events at a glance
-          </p>
-        </div>
-      </div>
+    <div className="page-content page-bg-sentinel page-enter">
+      <PageHeader
+        title="Schedule"
+        description="Tasks and calendar events at a glance"
+        icon={Calendar}
+        iconColor="#123C69"
+      />
 
       {/* Tab switcher */}
       <div style={{ marginBottom: 24 }}>

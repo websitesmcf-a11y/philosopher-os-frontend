@@ -29,7 +29,12 @@ const pathToBgKey: Record<string, string> = {
 
 export default function BackgroundWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const bgKey = pathToBgKey[pathname] || 'dashboard';
 
+  // Omega pages: no background image or texture — pure black handled by PhilosopherLayout
+  if (pathname.startsWith('/omega')) {
+    return <>{children}</>;
+  }
+
+  const bgKey = pathToBgKey[pathname] || 'dashboard';
   return <PageBackground pageKey={bgKey}>{children}</PageBackground>;
 }

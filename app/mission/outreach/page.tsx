@@ -107,7 +107,7 @@ export default function AutoReplyBotPage() {
   };
 
   return (
-    <div className="page-content page-enter">
+    <div className="page-content page-bg-sentinel page-enter">
       <PageHeader
         title="Auto Reply Bot"
         description="AI-powered auto-responder for WhatsApp and email — replies intelligently to incoming messages and follows up on stale conversations"

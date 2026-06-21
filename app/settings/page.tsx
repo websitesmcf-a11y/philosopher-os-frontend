@@ -33,9 +33,9 @@ const settingsGroups = [
 export default function SettingsPage() {
   usePageTitle('Settings');
   return (
-    <div className="page-content fade-in">
+    <div className="page-content page-bg-marble fade-in">
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Settings</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 500, margin: 0, fontFamily: 'var(--font-heading)' }}>Settings</h1>
         <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
           Manage your account, organization, and system preferences
         </p>

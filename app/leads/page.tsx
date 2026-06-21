@@ -3,7 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { listLeads, createLead, deleteLead, listLeadLists, type LeadStatus } from '@/lib/api-client';
-import { Search, Plus, Trash2, Layers, Lock, Unlock } from 'lucide-react';
+import { Search, Plus, Trash2, Layers, Lock, Unlock, Users } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePageTitle } from '@/lib/use-page-title';
@@ -74,19 +75,18 @@ export default function LeadsPage() {
     : leads;
 
   return (
-    <div className="page-content page-enter">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Leads</h1>
-          <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
-            Manage and track incoming leads
-          </p>
-        </div>
-        <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
-          <Plus size={16} /> Add Lead
-        </button>
-      </div>
+    <div className="page-content page-bg-command page-enter">
+      <PageHeader
+        title="Leads"
+        description="Manage and track incoming leads"
+        icon={Users}
+        iconColor="#123C69"
+        actions={
+          <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
+            <Plus size={16} /> Add Lead
+          </button>
+        }
+      />
 
       <CreateDialog
         open={dialogOpen}

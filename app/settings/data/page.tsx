@@ -123,7 +123,7 @@ export default function DataSettingsPage() {
 
   if (!loaded) {
     return (
-      <div className="page-content fade-in">
+      <div className="page-content page-bg-marble fade-in">
         <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
           <ArrowLeft size={14} /> Back to Settings
         </Link>
@@ -135,13 +135,13 @@ export default function DataSettingsPage() {
   }
 
   return (
-    <div className="page-content fade-in">
+    <div className="page-content page-bg-marble fade-in">
       <Link href="/settings" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', marginBottom: 16, textDecoration: 'none' }}>
         <ArrowLeft size={14} /> Back to Settings
       </Link>
 
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, fontFamily: 'var(--font-heading)' }}>Data</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 500, margin: 0, fontFamily: 'var(--font-heading)' }}>Data</h1>
         <p style={{ fontSize: 14, color: 'var(--foreground-secondary)', marginTop: 4 }}>
           Data retention and export settings
         </p>
