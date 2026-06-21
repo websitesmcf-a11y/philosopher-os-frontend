@@ -12,6 +12,8 @@ import { SidebarProvider, useSidebar } from '@/lib/sidebar-context';
 import BackgroundWrapper from './background-wrapper';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { PhilosopherLayout } from '@/components/philosopher-layout';
+import { TutorialProvider } from '@/lib/tutorial-context';
+import { TutorialOverlay } from '@/components/tutorial-overlay';
 
 const PUBLIC_PATHS = ['/login', '/signup', '/register', '/forgot-password', '/landing', '/onboarding'];
 
@@ -155,7 +157,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <AuthGuard>
             <ModeProvider>
               <SidebarProvider>
-                <LayoutShell>{children}</LayoutShell>
+                <TutorialProvider>
+                  <LayoutShell>{children}</LayoutShell>
+                  <TutorialOverlay />
+                </TutorialProvider>
               </SidebarProvider>
             </ModeProvider>
           </AuthGuard>

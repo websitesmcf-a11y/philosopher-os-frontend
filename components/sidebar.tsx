@@ -5,12 +5,13 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, Fragment } from 'react';
 import { useSidebar } from '@/lib/sidebar-context';
+import { useTutorial } from '@/lib/tutorial-context';
 import {
   LayoutDashboard, Users, Building2, MessageSquare, Megaphone,
   Wallet, BarChart3, Bot, Calendar, CheckSquare, BookOpen,
   Settings, LogOut, LogIn, User, PanelLeftClose, Menu, Plug, Brain, Radio,
   Zap, Shield, Target, Send, Sparkles, Monitor, Globe, Database,
-  ScanEye, Swords, NotebookPen, Timer, ChevronDown, ScrollText, Layers,
+  ScanEye, Swords, NotebookPen, Timer, ChevronDown, ScrollText, Layers, HelpCircle,
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { PHILOSOPHERS, PALETTE } from '@/lib/design-tokens';
@@ -21,13 +22,13 @@ const navItems = [
     section: 'Main',
     items: [
       { href: '/', label: 'Dashboard', icon: Monitor },
-      { href: '/mission', label: 'Mission Control', icon: Radio },
+      { href: '/mission', label: 'Mission Control', icon: Radio, tutorial: 'sidebar-mission' },
     ],
   },
   {
     section: 'Intelligence',
     items: [
-      { href: '/agents', label: 'Philosophers', icon: Brain },
+      { href: '/agents', label: 'Philosophers', icon: Brain, tutorial: 'sidebar-agents' },
       { href: '/agents/gods', label: 'Gods & Titans', icon: Zap },
       { href: '/mission/daily', label: 'Daily Command', icon: Swords },
     ],
@@ -35,11 +36,11 @@ const navItems = [
   {
     section: 'CRM',
     items: [
-      { href: '/leads', label: 'Leads', icon: Users },
+      { href: '/leads', label: 'Leads', icon: Users, tutorial: 'sidebar-leads' },
       { href: '/lead-lists', label: 'Lead Lists', icon: Layers },
       { href: '/clients', label: 'Clients', icon: Building2 },
       { href: '/conversations', label: 'Conversations', icon: MessageSquare },
-      { href: '/campaigns', label: 'Campaigns', icon: Target },
+      { href: '/campaigns', label: 'Campaigns', icon: Target, tutorial: 'sidebar-campaigns' },
     ],
   },
   {
@@ -55,7 +56,7 @@ const navItems = [
     section: 'System',
     items: [
       { href: '/knowledge', label: 'Knowledge Base', icon: BookOpen },
-      { href: '/connections', label: 'Integrations', icon: Plug },
+      { href: '/connections', label: 'Integrations', icon: Plug, tutorial: 'sidebar-connections' },
       { href: '/tools/cleanup', label: 'CRM Cleanup', icon: ScanEye },
       { href: '/tools/agent-logs', label: 'Agent Run Logs', icon: ScrollText },
       { href: '/hermes', label: 'Hermes Jobs', icon: Timer },
@@ -82,12 +83,12 @@ const SIDEBAR_ACTIVE_BG = 'rgba(18, 60, 105, 0.25)';
 const SIDEBAR_ACTIVE_GRADIENT = 'linear-gradient(90deg, rgba(18, 60, 105, 0.35) 0%, rgba(18, 60, 105, 0.08) 100%)';
 const SIDEBAR_ACTIVE_GODS_GRADIENT = 'linear-gradient(90deg, rgba(201, 162, 77, 0.2) 0%, rgba(201, 162, 77, 0.05) 100%)';
 
-function NavItem({ href, label, icon: Icon, collapsed, active, portraits }: {
-  href: string; label: string; icon: typeof Brain; collapsed: boolean; active: boolean; portraits?: string[];
+function NavItem({ href, label, icon: Icon, collapsed, active, portraits, tutorial }: {
+  href: string; label: string; icon: typeof Brain; collapsed: boolean; active: boolean; portraits?: string[]; tutorial?: string;
 }) {
   const content = (
     <Link href={href} style={{ textDecoration: 'none' }}>
-      <div style={{
+      <div data-tutorial={tutorial || undefined} style={{
         display: 'flex', alignItems: 'center', gap: 10, height: 40,
         padding: '0 16px',
         fontSize: 14, fontWeight: active ? 600 : 400,
@@ -183,6 +184,25 @@ function NavItem({ href, label, icon: Icon, collapsed, active, portraits }: {
         </Tooltip.Portal>
       </Tooltip.Root>
     </Tooltip.Provider>
+  );
+}
+
+function TutorialRestartButton({ collapsed }: { collapsed: boolean }) {
+  const { start } = useTutorial();
+  return (
+    <button
+      onClick={start}
+      title="Restart Tutorial"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, height: 40, width: '100%',
+        padding: '0 16px', fontSize: 14, color: SIDEBAR_FG,
+        background: 'none', border: 'none', cursor: 'pointer',
+        textAlign: 'left' as const, opacity: 0.7,
+      }}
+    >
+      <HelpCircle size={18} />
+      {!collapsed && <span>Tutorial</span>}
+    </button>
   );
 }
 
@@ -332,6 +352,7 @@ export default function Sidebar() {
                         collapsed={collapsed}
                         active={isActive(item.href)}
                         portraits={itemPortraits}
+                        tutorial={(item as any).tutorial}
                       />
                     </Fragment>
                   );
@@ -410,8 +431,9 @@ export default function Sidebar() {
             </div>
           )}
 
-          {/* Settings + Login/Logout */}
+          {/* Settings + Tutorial + Login/Logout */}
           <NavItem href="/settings" label="Settings" icon={Settings} collapsed={collapsed} active={isActive('/settings')} />
+          <TutorialRestartButton collapsed={collapsed} />
           <button onClick={isAuthenticated ? handleLogout : handleLogin} style={{
             display: 'flex', alignItems: 'center', gap: 10, height: 40, width: '100%',
             padding: '0 16px', fontSize: 14, color: SIDEBAR_FG,

@@ -105,6 +105,7 @@ function ChatInputTextArea({
   return (
     <Textarea
       ref={textareaRef}
+      data-tutorial="chat-input"
       {...props}
       value={value}
       onChange={onChange}
