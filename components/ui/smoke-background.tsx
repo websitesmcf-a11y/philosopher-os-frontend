@@ -52,7 +52,12 @@ void main(){gl_Position=position;}`;
 
   constructor(canvas: HTMLCanvasElement, fragmentSource: string) {
     this.canvas = canvas;
-    this.gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
+    const ctx = canvas.getContext("webgl2");
+    if (!ctx) {
+      this.gl = null as unknown as WebGL2RenderingContext;
+      return;
+    }
+    this.gl = ctx;
     this.setup(fragmentSource);
     this.init();
   }
@@ -89,6 +94,7 @@ void main(){gl_Position=position;}`;
 
   private setup(fragmentSource: string) {
     const gl = this.gl;
+    if (!gl) return;
     this.vs = gl.createShader(gl.VERTEX_SHADER);
     this.fs = gl.createShader(gl.FRAGMENT_SHADER);
     const program = gl.createProgram();
@@ -106,7 +112,7 @@ void main(){gl_Position=position;}`;
 
   private init() {
     const { gl, program } = this;
-    if (!program) return;
+    if (!gl || !program) return;
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
@@ -122,7 +128,7 @@ void main(){gl_Position=position;}`;
 
   render(now = 0) {
     const { gl, program, buffer, canvas } = this;
-    if (!program || !gl.isProgram(program)) return;
+    if (!gl || !program || !gl.isProgram(program)) return;
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(program);
