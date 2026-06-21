@@ -16,6 +16,7 @@ import {
 
 interface NodePaletteProps {
   onDragStart: (category: NodeCategory, label: string, data: Record<string, unknown>) => void;
+  onSmartSequence?: () => void;
 }
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
@@ -162,7 +163,7 @@ function AgentGrid({
   );
 }
 
-export default function NodePalette({ onDragStart }: NodePaletteProps) {
+export default function NodePalette({ onDragStart, onSmartSequence }: NodePaletteProps) {
   return (
     <div style={{
       width: 260,
@@ -222,7 +223,7 @@ export default function NodePalette({ onDragStart }: NodePaletteProps) {
           <AgentGrid agents={AGENTS_OMEGA} category="omega" onDragStart={onDragStart} />
 
           {/* Smart Sequence */}
-          <div style={{
+          <div onClick={() => onSmartSequence?.()} style={{
             marginTop: 10, padding: '10px 10px', borderRadius: 8,
             background: 'linear-gradient(135deg,#123C69 0%,#4C1D95 100%)',
             cursor: 'pointer',

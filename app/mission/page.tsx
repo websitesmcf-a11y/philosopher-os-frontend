@@ -15,8 +15,12 @@ import { toast } from 'sonner';
 import { nodeTypes } from '@/components/strategeion/custom-nodes';
 import NodePalette from '@/components/strategeion/node-palette';
 import ConfigPanel from '@/components/strategeion/config-panel';
+import SmartSequenceModal from '@/components/strategeion/smart-sequence-modal';
 import { FLOW_TEMPLATES, type StrategeionNodeData, type NodeCategory } from '@/components/strategeion/types';
 import { listFlows, createFlow, updateFlow, runFlow, getFlow, type FlowData } from '@/lib/api-client';
+
+const LS_KEY = 'philosopher-os:current-flow';
+const AUTO_SAVE_DELAY = 2000; // 2s debounce
 
 // ─── The actual builder (inside ReactFlowProvider) ─────────
 
@@ -27,8 +31,12 @@ function StrategeionBuilder() {
   const [flowName, setFlowName] = useState('Untitled Flow');
   const [currentFlowId, setCurrentFlowId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showSmartSequence, setShowSmartSequence] = useState(false);
   const [saving, setSaving] = useState(false);
   const flowLoaded = useRef(false);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef<string>('');  // JSON snapshot to avoid duplicate saves
+  const isFirstLoad = useRef(true);
 
   // React Flow state (inside provider context)
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
@@ -36,57 +44,139 @@ function StrategeionBuilder() {
   const { screenToFlowPosition } = useReactFlow();
 
   // Load flows list
-  const { data: flowsData } = useQuery({
+  const { data: flowsData, refetch: refetchFlows } = useQuery({
     queryKey: ['flows'],
     queryFn: () => listFlows(),
   });
 
-  // Load first flow or create sample
+  // Restore flow from localStorage on mount (before API loads)
   useEffect(() => {
-    if (flowLoaded.current) return;
-    if (flowsData?.flows?.length) {
-      const first = flowsData.flows[0];
-      setCurrentFlowId(first.id);
-      setFlowName(first.name);
-      if (first.node_count > 0) {
-        getFlow(first.id).then((detail) => {
-          if (detail?.data?.nodes?.length) {
-            setNodes(detail.data.nodes.map((n: any) => ({ ...n, type: 'strategeion' })));
-            setEdges(detail.data.edges || []);
-          }
-        }).catch(() => {});
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.flowName) setFlowName(parsed.flowName);
+        if (parsed.flowId) setCurrentFlowId(parsed.flowId);
+        if (parsed.nodes?.length) {
+          setNodes(parsed.nodes.map((n: any) => ({ ...n, type: 'strategeion' })));
+        }
+        if (parsed.edges?.length) {
+          setEdges(parsed.edges);
+        }
+        flowLoaded.current = true;
       }
-      flowLoaded.current = true;
-    } else if (flowsData?.flows !== undefined) {
-      // No flows — load sample
-      setNodes([
-        { id: 's-trigger', type: 'strategeion', position: { x: 55, y: 115 }, data: { label: 'NEW LEAD ADDED', category: 'trigger', subtitle: 'When a new lead enters the CRM', agentColor: '#1A5088', agentName: 'Trigger', agentInitial: 'NL', status: 'idle', config: {} } },
-        { id: 's-plato', type: 'strategeion', position: { x: 330, y: 68 }, data: { label: 'PLATO', category: 'philosopher', subtitle: 'Vision & Strategy — Analyse this lead', agentColor: '#123C69', agentName: 'Plato', agentInitial: 'Pl', status: 'idle', config: { instruction: 'Analyse this lead\'s industry, company size, and role.' } } },
-        { id: 's-whatsapp', type: 'strategeion', position: { x: 622, y: 48 }, data: { label: 'SEND WHATSAPP', category: 'action', subtitle: '+27 82 555 0100 · intro_lead_v2', agentColor: '#6F7D4F', agentName: 'WhatsApp', agentInitial: 'WA', status: 'idle', config: {} } },
-        { id: 's-logic', type: 'strategeion', position: { x: 622, y: 238 }, data: { label: 'IF / ELSE', category: 'logic', subtitle: 'Lead score ≥ 70 → Branch A', agentColor: '#4A4A5A', agentName: 'Condition', agentInitial: 'IE', status: 'idle', config: {} } },
-      ]);
-      setEdges([
-        { id: 'e1', source: 's-trigger', target: 's-plato' },
-        { id: 'e2', source: 's-plato', target: 's-whatsapp' },
-        { id: 'e3', source: 's-plato', target: 's-logic' },
-      ]);
+    } catch {}
+  }, []);
+
+  // Load first flow from API if no localStorage restore
+  useEffect(() => {
+    if (flowLoaded.current || !flowsData?.flows?.length) return;
+
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) return; // Already restored from localStorage
+
+    const first = flowsData.flows[0];
+    setCurrentFlowId(first.id);
+    setFlowName(first.name);
+    if (first.node_count > 0) {
+      getFlow(first.id).then((detail) => {
+        if (detail?.data?.nodes?.length) {
+          setNodes(detail.data.nodes.map((n: any) => ({ ...n, type: 'strategeion' })));
+          setEdges(detail.data.edges || []);
+        }
+      }).catch(() => {});
+    }
+    flowLoaded.current = true;
+  }, [flowsData, setNodes, setEdges]);
+
+  // Create sample flow only if nothing restored
+  useEffect(() => {
+    if (flowLoaded.current || flowsData === undefined) return;
+    if (flowsData?.flows?.length !== undefined && localStorage.getItem(LS_KEY)) return;
+
+    if (flowsData?.flows?.length === 0) {
+      // Check no localStorage - truly new
+      if (!localStorage.getItem(LS_KEY)) {
+        setNodes([
+          { id: 's-trigger', type: 'strategeion', position: { x: 55, y: 115 }, data: { label: 'NEW LEAD ADDED', category: 'trigger', subtitle: 'When a new lead enters the CRM', agentColor: '#1A5088', agentName: 'Trigger', agentInitial: 'NL', status: 'idle', config: {} } },
+          { id: 's-plato', type: 'strategeion', position: { x: 330, y: 68 }, data: { label: 'PLATO', category: 'philosopher', subtitle: 'Vision & Strategy', agentColor: '#123C69', agentName: 'Plato', agentInitial: 'Pl', status: 'idle', config: {} } },
+          { id: 's-whatsapp', type: 'strategeion', position: { x: 622, y: 48 }, data: { label: 'SEND WHATSAPP', category: 'action', subtitle: 'Send template message', agentColor: '#6F7D4F', agentName: 'WhatsApp', agentInitial: 'WA', status: 'idle', config: {} } },
+          { id: 's-logic', type: 'strategeion', position: { x: 622, y: 238 }, data: { label: 'IF / ELSE', category: 'logic', subtitle: 'Lead score >= 70', agentColor: '#4A4A5A', agentName: 'Condition', agentInitial: 'IE', status: 'idle', config: {} } },
+        ]);
+        setEdges([
+          { id: 'e1', source: 's-trigger', target: 's-plato' },
+          { id: 'e2', source: 's-plato', target: 's-whatsapp' },
+          { id: 'e3', source: 's-plato', target: 's-logic' },
+        ]);
+      }
       flowLoaded.current = true;
     }
   }, [flowsData, setNodes, setEdges]);
 
-  // Mutations
+  // ─── Auto-save to localStorage (instant) ─────────────────
+  useEffect(() => {
+    if (isFirstLoad.current) { isFirstLoad.current = false; return; }
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        flowName, flowId: currentFlowId,
+        nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, data: n.data, width: n.width, height: n.height })),
+        edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+        savedAt: new Date().toISOString(),
+      }));
+    } catch {}
+  }, [nodes, edges, flowName, currentFlowId]);
+
+  // ─── Auto-save to API (debounced) ────────────────────────
   const createMut = useMutation({
     mutationFn: createFlow,
-    onSuccess: (res) => { setCurrentFlowId(res.id); toast.success('Flow saved'); },
-    onError: () => toast.error('Failed to save flow'),
+    onSuccess: (res) => {
+      setCurrentFlowId(res.id);
+      // Store the new flow ID in localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        saved.flowId = res.id;
+        localStorage.setItem(LS_KEY, JSON.stringify(saved));
+      } catch {}
+    },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => updateFlow(id, data),
-    onSuccess: () => toast.success('Flow saved'),
-    onError: () => toast.error('Failed to save'),
   });
 
+  const doApiSave = useCallback(() => {
+    const flowData: FlowData = {
+      nodes: nodes.map((n) => ({
+        id: n.id, type: n.type || 'strategeion',
+        position: n.position, data: n.data,
+        width: n.width || 220, height: n.height,
+      })),
+      edges: edges.map((e) => ({
+        id: e.id, source: e.source, target: e.target,
+        sourceHandle: e.sourceHandle ?? undefined,
+        targetHandle: e.targetHandle ?? undefined,
+      })),
+    };
+    const snapshot = JSON.stringify(flowData) + flowName;
+    if (snapshot === lastSavedRef.current) return; // No real change
+    lastSavedRef.current = snapshot;
+
+    if (currentFlowId) {
+      updateMut.mutate({ id: currentFlowId, data: { name: flowName, data: flowData } });
+    } else if (nodes.length > 0) {
+      createMut.mutate({ name: flowName, data: flowData });
+    }
+  }, [currentFlowId, flowName, nodes, edges, createMut, updateMut]);
+
+  // Debounced auto-save on node/edge changes
+  useEffect(() => {
+    if (isFirstLoad.current) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(doApiSave, AUTO_SAVE_DELAY);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [nodes, edges, flowName, doApiSave]);
+
+  // Mutations for manual save/run
   const runMut = useMutation({
     mutationFn: (flowId: string) => runFlow(flowId),
     onSuccess: (res) => {
@@ -114,7 +204,6 @@ function StrategeionBuilder() {
       event.preventDefault();
       const raw = event.dataTransfer.getData('application/strategeion-node');
       if (!raw) return;
-
       try {
         const { category, label, data: nodeData } = JSON.parse(raw);
         const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
@@ -130,7 +219,7 @@ function StrategeionBuilder() {
           trigger: 'Configure this trigger',
           philosopher: `${nodeData?.name || label} — Configure instruction`,
           god: `${nodeData?.name || label} — Domain execution`,
-          omega: `${nodeData?.name || label} — Ω-tier capability`,
+          omega: `${nodeData?.name || label} — Omega-tier capability`,
           action: 'Configure this action',
           logic: 'Set condition rules',
         };
@@ -162,25 +251,10 @@ function StrategeionBuilder() {
   // Handlers
   const handleSave = useCallback(() => {
     setSaving(true);
-    const flowData: FlowData = {
-      nodes: nodes.map((n) => ({
-        id: n.id, type: n.type || 'strategeion',
-        position: n.position, data: n.data,
-        width: n.width || 220, height: n.height,
-      })),
-      edges: edges.map((e) => ({
-        id: e.id, source: e.source, target: e.target,
-        sourceHandle: e.sourceHandle ?? undefined,
-        targetHandle: e.targetHandle ?? undefined,
-      })),
-    };
-    if (currentFlowId) {
-      updateMut.mutate({ id: currentFlowId, data: { name: flowName, data: flowData } });
-    } else {
-      createMut.mutate({ name: flowName, data: flowData });
-    }
-    setSaving(false);
-  }, [currentFlowId, flowName, nodes, edges, createMut, updateMut]);
+    doApiSave();
+    setTimeout(() => setSaving(false), 500);
+    toast.success('Flow saved');
+  }, [doApiSave]);
 
   const handleRun = useCallback(() => {
     if (currentFlowId) runMut.mutate(currentFlowId);
@@ -192,8 +266,8 @@ function StrategeionBuilder() {
     setShowTemplates(false);
     setNodes([
       { id: 't-trig', type: 'strategeion', position: { x: 55, y: 130 }, data: { label: 'NEW LEAD ADDED', category: 'trigger', subtitle: 'When a new lead enters the CRM', agentColor: '#1A5088', agentName: 'Trigger', agentInitial: 'NL', status: 'idle', config: {} } },
-      { id: 't-a1', type: 'strategeion', position: { x: 330, y: 60 }, data: { label: 'PLATO', category: 'philosopher', subtitle: 'Vision & Strategy — Analyse this lead', agentColor: '#123C69', agentName: 'Plato', agentInitial: 'Pl', status: 'idle', config: {} } },
-      { id: 't-a2', type: 'strategeion', position: { x: 330, y: 240 }, data: { label: 'PYTHAGORAS', category: 'philosopher', subtitle: 'Score & Rank 0–100', agentColor: '#4A4A7A', agentName: 'Pythagoras', agentInitial: 'Py', status: 'idle', config: {} } },
+      { id: 't-a1', type: 'strategeion', position: { x: 330, y: 60 }, data: { label: 'PLATO', category: 'philosopher', subtitle: 'Vision & Strategy', agentColor: '#123C69', agentName: 'Plato', agentInitial: 'Pl', status: 'idle', config: {} } },
+      { id: 't-a2', type: 'strategeion', position: { x: 330, y: 240 }, data: { label: 'PYTHAGORAS', category: 'philosopher', subtitle: 'Score & Rank 0-100', agentColor: '#4A4A7A', agentName: 'Pythagoras', agentInitial: 'Py', status: 'idle', config: {} } },
       { id: 't-act', type: 'strategeion', position: { x: 620, y: 90 }, data: { label: 'SEND WHATSAPP', category: 'action', subtitle: 'Send template message', agentColor: '#6F7D4F', agentName: 'WhatsApp', agentInitial: 'WA', status: 'idle', config: {} } },
     ]);
     setEdges([
@@ -207,6 +281,15 @@ function StrategeionBuilder() {
   const handleUpdateNode = useCallback((nodeId: string, newData: Record<string, unknown>) => {
     setNodes((nds) => nds.map((n) => n.id === nodeId ? { ...n, data: newData } : n));
   }, [setNodes]);
+
+  // Smart Sequence handler
+  const handleSmartSequence = useCallback((newNodes: Node[], newEdges: Edge[], suggestion: string) => {
+    setNodes(newNodes);
+    setEdges(newEdges);
+    if (suggestion) {
+      toast.success(suggestion);
+    }
+  }, [setNodes, setEdges]);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
 
@@ -248,7 +331,7 @@ function StrategeionBuilder() {
             {runMut.isPending
               ? <div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(15,23,34,0.2)', borderTopColor: '#0F1722', animation: 'runSpin 0.8s linear infinite' }} />
               : <Zap size={13} />}
-            {running ? 'Running…' : 'Run Flow'}
+            {running ? 'Running...' : 'Run Flow'}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#938C7A' }}>Activate</span>
@@ -269,7 +352,7 @@ function StrategeionBuilder() {
               style={{ padding: '10px 12px', borderRadius: 8, background: t.gradient, cursor: 'pointer', marginBottom: 6 }}>
               <div style={{ fontFamily: "'Hanken Grotesk',sans-serif", fontSize: 13, fontWeight: 600, color: 'white' }}>{t.title}</div>
               <div style={{ fontFamily: "'Hanken Grotesk',sans-serif", fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{t.desc}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{t.agents} · {t.nodes} nodes</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{t.agents} . {t.nodes} nodes</div>
             </div>
           ))}
         </div>
@@ -279,7 +362,7 @@ function StrategeionBuilder() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
         {/* ── LEFT PANEL ── */}
-        <NodePalette onDragStart={() => {}} />
+        <NodePalette onDragStart={() => {}} onSmartSequence={() => setShowSmartSequence(true)} />
 
         {/* ── CANVAS ── */}
         <div style={{ flex: 1, position: 'relative' }} onDragOver={onDragOver} onDrop={onDrop}>
@@ -315,6 +398,13 @@ function StrategeionBuilder() {
         />
 
       </div>
+
+      {/* ── SMART SEQUENCE MODAL ── */}
+      <SmartSequenceModal
+        isOpen={showSmartSequence}
+        onClose={() => setShowSmartSequence(false)}
+        onFlowGenerated={handleSmartSequence}
+      />
     </div>
   );
 }

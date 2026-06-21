@@ -891,3 +891,13 @@ export async function runFlow(flowId: string, nodeId?: string) {
 export async function duplicateFlow(flowId: string) {
   return request<{ id: string; name: string; message: string }>(`/flows/${flowId}/duplicate`, { method: 'POST' });
 }
+
+export async function generateSmartSequence(prompt: string) {
+  return request<{
+    nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }>;
+    edges: Array<{ id: string; source: string; target: string }>;
+    suggestion: string;
+    node_count: number;
+    edge_count: number;
+  }>('/flows/smart-sequence/', { method: 'POST', body: { prompt } });
+}
