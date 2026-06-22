@@ -129,8 +129,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const done = localStorage.getItem('tutorial_done');
-    const onboarding = localStorage.getItem('philosopher_onboarding_complete');
-    if (!done && onboarding) {
+    if (!done) {
       // Small delay so layout renders before we measure element positions.
       const t = setTimeout(() => setActive(true), 800);
       return () => clearTimeout(t);

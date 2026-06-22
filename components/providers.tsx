@@ -16,7 +16,7 @@ import { PhilosopherLayout } from '@/components/philosopher-layout';
 import { TutorialProvider } from '@/lib/tutorial-context';
 import { TutorialOverlay } from '@/components/tutorial-overlay';
 
-const PUBLIC_PATHS = ['/login', '/signup', '/register', '/forgot-password', '/landing', '/onboarding'];
+const PUBLIC_PATHS = ['/login', '/signup', '/register', '/forgot-password', '/landing'];
 
 const TITLE_MAP: Record<string, string> = {
   '/': 'Dashboard',
@@ -49,30 +49,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     const isPublic = PUBLIC_PATHS.includes(pathname);
-    const isOnboarding = pathname === '/onboarding';
 
-    if (!token && !isPublic && !isOnboarding) {
+    if (!token && !isPublic) {
       router.replace('/login');
       setChecked(true);
       return;
     }
 
     setAuthenticated(!!token);
-
-    // If returning from an action page during onboarding, go back to onboarding
-    if (token && !isOnboarding && !isPublic && localStorage.getItem('philosopher_onboarding_return') === 'true' && !localStorage.getItem('philosopher_onboarding_complete')) {
-      router.replace('/onboarding');
-      setChecked(true);
-      return;
-    }
-
-    // Redirect new users to onboarding (check on any non-public page, not just dashboard)
-    if (token && !isPublic && !isOnboarding && !localStorage.getItem('philosopher_onboarding_complete')) {
-      router.replace('/onboarding');
-      setChecked(true);
-      return;
-    }
-
     setChecked(true);
   }, [pathname, router]);
 
