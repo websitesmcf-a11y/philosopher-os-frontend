@@ -134,6 +134,7 @@ export default function OnboardingPage() {
   const handleNext = () => {
     if (isLast) {
       localStorage.setItem('philosopher_onboarding_complete', 'true');
+      localStorage.setItem('tutorial_done', '1');  // Prevent the overlay tutorial from also firing
       // Redirect to profile setup so they choose their avatar and name
       router.push('/settings/profile');
     } else {
@@ -143,6 +144,7 @@ export default function OnboardingPage() {
 
   const handleSkip = () => {
     localStorage.setItem('philosopher_onboarding_complete', 'true');
+    localStorage.setItem('tutorial_done', '1');  // Prevent the overlay tutorial from also firing
     router.push('/');
   };
 
