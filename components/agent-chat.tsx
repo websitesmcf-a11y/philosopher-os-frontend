@@ -34,9 +34,10 @@ const AGENTS: Agent[] = [
 ];
 
 type Message = {
-  role: 'user' | 'agent';
+  role: 'user' | 'agent' | 'handover' | 'tool_activity';
   content: string;
   agent?: string;
+  toAgent?: string;
   timestamp: Date;
 };
 
@@ -255,6 +256,21 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
       role: 'agent', content: '', agent: agentName, timestamp: new Date(),
     }]);
 
+    const TOOL_FRIENDLY: Record<string, string> = {
+      send_whatsapp_direct: 'Sending WhatsApp',
+      send_whatsapp: 'Sending WhatsApp',
+      find_lead_by_name: 'Looking up contact',
+      find_and_save_leads: 'Finding leads',
+      web_search: 'Searching the web',
+      fetch_webpage: 'Reading page',
+      browser_task: 'Running browser',
+      redirect_to_agent: 'Handing off to',
+      get_help_from: 'Consulting',
+      search_knowledge: 'Searching knowledge',
+      recall: 'Checking memory',
+      start_background_job: 'Starting background job',
+    };
+
     try {
       const { chatStream } = await import('@/lib/api-client');
 
@@ -268,6 +284,34 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
               updated[updated.length - 1] = { ...last, content: last.content + event.content! };
             }
             return updated;
+          });
+        } else if (event.type === 'tool_start') {
+          const toolName = (event as any).tool as string;
+          const isHandover = toolName === 'redirect_to_agent' || toolName === 'get_help_from';
+          let inputData: any = {};
+          try { inputData = JSON.parse((event as any).input || '{}'); } catch { /* ignore */ }
+          const targetAgent = inputData.agent;
+          const label = TOOL_FRIENDLY[toolName]
+            ? (targetAgent ? `${TOOL_FRIENDLY[toolName]} ${targetAgent}…` : `${TOOL_FRIENDLY[toolName]}…`)
+            : `${toolName}…`;
+          setAgentMessages(agentName, prev => [
+            ...prev,
+            {
+              role: isHandover ? 'handover' : 'tool_activity',
+              content: label,
+              agent: agentName,
+              toAgent: targetAgent,
+              timestamp: new Date(),
+            } as Message,
+            { role: 'agent', content: '', agent: targetAgent || agentName, timestamp: new Date() },
+          ]);
+        } else if (event.type === 'tool_end') {
+          // Remove the empty trailing agent bubble if it has no content
+          setAgentMessages(agentName, prev => {
+            if (prev.length && prev[prev.length - 1].role === 'agent' && prev[prev.length - 1].content === '') {
+              return prev.slice(0, -1);
+            }
+            return prev;
           });
         } else if (event.type === 'error') {
           setAgentMessages(agentName, prev => {
@@ -416,56 +460,77 @@ export default function AgentChat({ initialAgent = 'plato' }: { initialAgent?: s
 
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {messages.map((msg, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', maxWidth: '85%', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                {msg.role === 'agent' && msg.agent && (
-                  <div style={{
-                    width: 28, height: 28, flexShrink: 0, marginTop: 2,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: `${(AGENTS.find(a => a.name === msg.agent)?.color || 'var(--accent)')}15`,
-                  }}>
-                    {createElement(AGENTS.find(a => a.name === msg.agent)?.icon || Bot, { size: 14, color: AGENTS.find(a => a.name === msg.agent)?.color || 'var(--accent)' })}
+            {messages.map((msg, i) => {
+              // Handover / tool activity pill — centred, no bubble
+              if (msg.role === 'handover' || msg.role === 'tool_activity') {
+                const isHandover = msg.role === 'handover';
+                return (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      padding: '3px 10px', borderRadius: 20,
+                      background: isHandover ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${isHandover ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                      fontSize: 11, color: isHandover ? '#818CF8' : 'var(--muted)',
+                      fontFamily: 'var(--font-mono)',
+                    }}>
+                      {isHandover ? '→' : '⚙'} {msg.content}
+                    </div>
                   </div>
-                )}
-                {msg.role === 'user' && (
-                  <div style={{
-                    width: 28, height: 28, flexShrink: 0, marginTop: 2,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'var(--accent-subtle)',
-                  }}>
-                    <User size={14} color="var(--accent)" />
-                  </div>
-                )}
-                <div style={{
-                  padding: '10px 14px', fontSize: 14, lineHeight: 1.6,
-                  background: msg.role === 'user' ? 'var(--accent)' : 'var(--background)',
-                  color: msg.role === 'user' ? 'white' : 'var(--foreground)',
-                  border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
-                  minHeight: msg.content === '' ? 20 : undefined,
-                }}>
-                  {msg.content === '' && isLoading ? (
-                    <span style={{ display: 'flex', gap: 4 }}>
-                      <span style={{ animation: 'bounce 1.4s infinite', animationDelay: '0s' }}>.</span>
-                      <span style={{ animation: 'bounce 1.4s infinite', animationDelay: '0.2s' }}>.</span>
-                      <span style={{ animation: 'bounce 1.4s infinite', animationDelay: '0.4s' }}>.</span>
-                    </span>
-                  ) : (
-                    msg.content.split('\n').map((line, j) => {
-                      if (line.startsWith('**') && line.endsWith('**')) {
-                        return <div key={j} style={{ fontWeight: 600, marginBottom: 4 }}>{line.slice(2, -2)}</div>;
-                      }
-                      if (line.startsWith('- ')) {
-                        return <div key={j} style={{ paddingLeft: 12, marginBottom: 2 }}>&bull; {line.slice(2)}</div>;
-                      }
-                      if (line.startsWith('#')) {
-                        return <div key={j} style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{line.replace(/^#+\s*/, '')}</div>;
-                      }
-                      return line ? <div key={j} style={{ marginBottom: 2 }}>{line}</div> : <div key={j} style={{ height: 8 }} />;
-                    })
+                );
+              }
+
+              return (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', maxWidth: '85%', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  {msg.role === 'agent' && msg.agent && (
+                    <div style={{
+                      width: 28, height: 28, flexShrink: 0, marginTop: 2,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: `${(AGENTS.find(a => a.name === msg.agent)?.color || 'var(--accent)')}15`,
+                    }}>
+                      {createElement(AGENTS.find(a => a.name === msg.agent)?.icon || Bot, { size: 14, color: AGENTS.find(a => a.name === msg.agent)?.color || 'var(--accent)' })}
+                    </div>
                   )}
+                  {msg.role === 'user' && (
+                    <div style={{
+                      width: 28, height: 28, flexShrink: 0, marginTop: 2,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'var(--accent-subtle)',
+                    }}>
+                      <User size={14} color="var(--accent)" />
+                    </div>
+                  )}
+                  <div style={{
+                    padding: '10px 14px', fontSize: 14, lineHeight: 1.6,
+                    background: msg.role === 'user' ? 'var(--accent)' : 'var(--background)',
+                    color: msg.role === 'user' ? 'white' : 'var(--foreground)',
+                    border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
+                    minHeight: msg.content === '' ? 20 : undefined,
+                  }}>
+                    {msg.content === '' && isLoading ? (
+                      <span style={{ display: 'flex', gap: 4 }}>
+                        <span style={{ animation: 'bounce 1.4s infinite', animationDelay: '0s' }}>.</span>
+                        <span style={{ animation: 'bounce 1.4s infinite', animationDelay: '0.2s' }}>.</span>
+                        <span style={{ animation: 'bounce 1.4s infinite', animationDelay: '0.4s' }}>.</span>
+                      </span>
+                    ) : (
+                      msg.content.split('\n').map((line, j) => {
+                        if (line.startsWith('**') && line.endsWith('**')) {
+                          return <div key={j} style={{ fontWeight: 600, marginBottom: 4 }}>{line.slice(2, -2)}</div>;
+                        }
+                        if (line.startsWith('- ')) {
+                          return <div key={j} style={{ paddingLeft: 12, marginBottom: 2 }}>&bull; {line.slice(2)}</div>;
+                        }
+                        if (line.startsWith('#')) {
+                          return <div key={j} style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{line.replace(/^#+\s*/, '')}</div>;
+                        }
+                        return line ? <div key={j} style={{ marginBottom: 2 }}>{line}</div> : <div key={j} style={{ height: 8 }} />;
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={endRef} />
           </div>
 

@@ -174,7 +174,7 @@ function SingularityLoader({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-type Message = { role: 'user' | 'agent'; content: string; timestamp: Date };
+type Message = { role: 'user' | 'agent' | 'handover' | 'tool_activity'; content: string; toAgent?: string; timestamp: Date };
 
 function renderContent(text: string, accent: string) {
   if (!text) return <span style={{ opacity: 0.4 }}>Processing...</span>;
@@ -293,6 +293,33 @@ export default function SingularityPage() {
                 const last = updated[updated.length - 1];
                 if (last.role === 'agent') updated[updated.length - 1] = { ...last, content: last.content + evt.content };
                 return updated;
+              });
+            } else if (evt.type === 'tool_start') {
+              const toolName = evt.tool as string;
+              const isHandover = toolName === 'redirect_to_agent' || toolName === 'get_help_from';
+              let inputData: any = {};
+              try { inputData = JSON.parse(evt.input || '{}'); } catch { /* ignore */ }
+              const targetAgent = inputData.agent;
+              const FRIENDLY: Record<string, string> = {
+                redirect_to_agent: '→ Handing off to', get_help_from: '→ Consulting',
+                send_whatsapp_direct: '⚡ Sending WhatsApp', send_whatsapp: '⚡ Sending WhatsApp',
+                find_lead_by_name: '🔍 Looking up contact', find_and_save_leads: '🔍 Finding leads',
+                web_search: '🌐 Searching web', start_background_job: '⚙ Starting job',
+              };
+              const label = FRIENDLY[toolName]
+                ? (targetAgent ? `${FRIENDLY[toolName]} ${targetAgent}…` : `${FRIENDLY[toolName]}…`)
+                : `⚙ ${toolName}…`;
+              setMessages(prev => [
+                ...prev,
+                { role: isHandover ? 'handover' : 'tool_activity', content: label, toAgent: targetAgent, timestamp: new Date() },
+                { role: 'agent', content: '', timestamp: new Date() },
+              ]);
+            } else if (evt.type === 'tool_end') {
+              setMessages(prev => {
+                if (prev.length && prev[prev.length - 1].role === 'agent' && prev[prev.length - 1].content === '') {
+                  return prev.slice(0, -1);
+                }
+                return prev;
               });
             } else if (evt.type === 'error') {
               setMessages(prev => {
@@ -428,43 +455,62 @@ export default function SingularityPage() {
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 20, position: 'relative', zIndex: 1 }}>
-          {messages.map((msg, i) => (
-            <div key={i} style={{
-              display: 'flex',
-              flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-              gap: 12, alignItems: 'flex-start',
-            }}>
-              {msg.role === 'agent' && (
-                <div style={{ width: 32, height: 32, borderRadius: 6, overflow: 'hidden', border: `1px solid ${agent.accent}30`, flexShrink: 0, position: 'relative' }}>
-                  <Image src={agent.image} alt="Singularity" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+          {messages.map((msg, i) => {
+            if (msg.role === 'handover' || msg.role === 'tool_activity') {
+              const isHandover = msg.role === 'handover';
+              return (
+                <div key={i} style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '3px 12px', borderRadius: 20,
+                    background: isHandover ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${isHandover ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                    fontSize: 11, color: isHandover ? '#818CF8' : 'rgba(255,255,255,0.4)',
+                    fontFamily: 'var(--font-mono)',
+                  }}>
+                    {msg.content}
+                  </div>
                 </div>
-              )}
-              <div style={{
-                maxWidth: '72%',
-                padding: '12px 16px',
-                borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
-                background: msg.role === 'user'
-                  ? `${agent.accent}18`
-                  : 'rgba(255,255,255,0.03)',
-                border: msg.role === 'user'
-                  ? `1px solid ${agent.accent}25`
-                  : '1px solid rgba(255,255,255,0.06)',
-                fontSize: 14, lineHeight: 1.7,
-                color: '#E0E0E8',
-                whiteSpace: 'pre-wrap',
+              );
+            }
+            return (
+              <div key={i} style={{
+                display: 'flex',
+                flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                gap: 12, alignItems: 'flex-start',
               }}>
-                {renderContent(msg.content, agent.accent)}
-                {msg.role === 'agent' && i === messages.length - 1 && isStreaming && (
-                  <span style={{
-                    display: 'inline-block', width: 6, height: 14,
-                    background: agent.accent, borderRadius: 2,
-                    marginLeft: 2, verticalAlign: 'middle',
-                    animation: 'blink 0.8s infinite',
-                  }} />
+                {msg.role === 'agent' && (
+                  <div style={{ width: 32, height: 32, borderRadius: 6, overflow: 'hidden', border: `1px solid ${agent.accent}30`, flexShrink: 0, position: 'relative' }}>
+                    <Image src={agent.image} alt="Singularity" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+                  </div>
                 )}
+                <div style={{
+                  maxWidth: '72%',
+                  padding: '12px 16px',
+                  borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
+                  background: msg.role === 'user'
+                    ? `${agent.accent}18`
+                    : 'rgba(255,255,255,0.03)',
+                  border: msg.role === 'user'
+                    ? `1px solid ${agent.accent}25`
+                    : '1px solid rgba(255,255,255,0.06)',
+                  fontSize: 14, lineHeight: 1.7,
+                  color: '#E0E0E8',
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {renderContent(msg.content, agent.accent)}
+                  {msg.role === 'agent' && i === messages.length - 1 && isStreaming && (
+                    <span style={{
+                      display: 'inline-block', width: 6, height: 14,
+                      background: agent.accent, borderRadius: 2,
+                      marginLeft: 2, verticalAlign: 'middle',
+                      animation: 'blink 0.8s infinite',
+                    }} />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={endRef} />
         </div>
 
