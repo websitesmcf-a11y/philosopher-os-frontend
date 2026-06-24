@@ -109,7 +109,11 @@ export const useModeStore = create<ModeState>()(
       currentMode: 'plato',
       config: MODE_PROFILES.plato,
       availableModes: Object.values(MODE_PROFILES),
-      setMode: (mode) => set({ currentMode: mode, config: MODE_PROFILES[mode] }),
+      setMode: (mode) => {
+        const profile = MODE_PROFILES[mode];
+        if (!profile) return; // God/Titan agents are not philosopher modes — ignore
+        set({ currentMode: mode, config: profile });
+      },
     }),
     { name: 'philosopher-mode' }
   )

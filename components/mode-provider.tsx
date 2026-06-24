@@ -14,18 +14,19 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
   const config = useModeStore(s => s.config);
 
   useEffect(() => {
+    const accent = config?.accentColor || '#123C69';
     const root = document.documentElement;
-    root.style.setProperty('--accent', config.accentColor);
-    root.style.setProperty('--accent-subtle', hexToRgba(config.accentColor, 0.08));
-    root.style.setProperty('--accent-light', hexToRgba(config.accentColor, 0.12));
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-subtle', hexToRgba(accent, 0.08));
+    root.style.setProperty('--accent-light', hexToRgba(accent, 0.12));
 
     // Set the philosopher-specific CSS variable
-    root.style.setProperty('--philosopher-current', config.accentColor);
+    root.style.setProperty('--philosopher-current', accent);
 
     // Data attributes for CSS overrides
-    root.setAttribute('data-mode', config.mode);
-    root.setAttribute('data-density', config.layoutDensity);
-    root.setAttribute('data-motion', String(config.motionEnabled));
+    root.setAttribute('data-mode', config?.mode || 'plato');
+    root.setAttribute('data-density', config?.layoutDensity || 'normal');
+    root.setAttribute('data-motion', String(config?.motionEnabled ?? true));
   }, [config]);
 
   return <>{children}</>;

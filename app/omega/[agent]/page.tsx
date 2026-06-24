@@ -21,7 +21,7 @@ function AgentBackground({ agentKey }: { agentKey: string }) {
   return null;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
+const API_BASE = '/api/proxy';
 
 type Message = {
   role: 'user' | 'agent';
