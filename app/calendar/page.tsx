@@ -366,7 +366,7 @@ function GoogleCalendarTab() {
   const handleSync = () => {
     setSyncing(true);
     // Try actual sync via API, fall back to philosopher instructions
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/proxy'}/connections/google_calendar/auth-url`)
+    fetch(`${'/api/proxy'}/connections/google_calendar/auth-url`)
       .then(r => r.json())
       .then(data => {
         if (data?.auth_url) {
