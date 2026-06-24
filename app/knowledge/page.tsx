@@ -44,7 +44,7 @@ function catColor(category: string) {
 
 function buildNodes(graphNodes: KnowledgeGraphNode[]): Node[] {
   const total = graphNodes.length;
-  const radius = Math.max(220, total * 50);
+  const radius = Math.max(200, total * 55);
   return graphNodes.map((n, i) => {
     const angle = (2 * Math.PI * i) / Math.max(total, 1);
     return {
@@ -106,7 +106,7 @@ function GraphCanvas({ onNodeClick }: { onNodeClick: (n: KnowledgeGraphNode) => 
 
   if (isLoading) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)' }}>
         <p style={{ color: 'var(--muted)' }}>Building memory graph...</p>
       </div>
     );
@@ -114,9 +114,9 @@ function GraphCanvas({ onNodeClick }: { onNodeClick: (n: KnowledgeGraphNode) => 
 
   if (!data?.nodes.length) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)' }}>
         <Network size={48} color="var(--muted)" style={{ opacity: 0.3 }} />
-        <p style={{ color: 'var(--muted)' }}>No articles yet — add your first to see the memory graph</p>
+        <p style={{ color: 'var(--muted)', fontSize: 14 }}>No articles yet — add your first to see the memory graph</p>
       </div>
     );
   }
@@ -130,7 +130,7 @@ function GraphCanvas({ onNodeClick }: { onNodeClick: (n: KnowledgeGraphNode) => 
       onNodeClick={handleNodeClick}
       fitView
       fitViewOptions={{ padding: 0.15 }}
-      style={{ background: 'var(--surface, #f8f5ef)' }}
+      style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)' }}
     >
       <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--border, #e5e0d8)" />
       <Controls />
@@ -184,77 +184,63 @@ export default function KnowledgePage() {
   });
 
   return (
-    <div
-      className="page-bg-treasury page-enter"
-      style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}
-    >
+    <div className="page-content page-bg-treasury page-enter">
       {/* ── Header ── */}
-      <div style={{ padding: '20px 24px 0', flexShrink: 0 }}>
-        <PageHeader
-          title="Memory Graph"
-          description="Semantic knowledge map — click any node to read"
-          icon={Network}
-          iconColor="#123C69"
-          actions={
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {/* View toggle */}
-              <div style={{ display: 'flex', background: 'var(--border)', borderRadius: 6, padding: 2, gap: 2 }}>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setView('graph')}
-                  style={{
-                    padding: '4px 10px', fontSize: 12, gap: 4,
-                    background: view === 'graph' ? 'var(--surface)' : 'transparent',
-                    borderRadius: 4,
-                  }}
-                >
-                  <Network size={13} /> Graph
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setView('list')}
-                  style={{
-                    padding: '4px 10px', fontSize: 12, gap: 4,
-                    background: view === 'list' ? 'var(--surface)' : 'transparent',
-                    borderRadius: 4,
-                  }}
-                >
-                  <List size={13} /> List
-                </button>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt,.md,.pdf,.docx,.csv,.json"
-                style={{ display: 'none' }}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setUploading(true);
-                  try {
-                    const result = await uploadKnowledgeFile(file);
-                    toast.success(result.message);
-                    invalidate();
-                  } catch (err: unknown) {
-                    toast.error((err as Error)?.message || 'Upload failed');
-                  } finally {
-                    setUploading(false);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }
-                }}
-              />
-              <button className="btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 size={15} /> : <Upload size={15} />}
-                {uploading ? 'Uploading…' : 'Upload'}
+      <PageHeader
+        title="Memory Graph"
+        description="Semantic knowledge map — click any node to read"
+        icon={Network}
+        iconColor="#123C69"
+        actions={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {/* View toggle */}
+            <div style={{ display: 'flex', background: 'var(--border)', borderRadius: 6, padding: 2, gap: 2 }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setView('graph')}
+                style={{ padding: '4px 10px', fontSize: 12, gap: 4, background: view === 'graph' ? 'var(--surface)' : 'transparent', borderRadius: 4 }}
+              >
+                <Network size={13} /> Graph
               </button>
-              <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
-                <Plus size={15} /> Add Article
+              <button
+                className="btn btn-ghost"
+                onClick={() => setView('list')}
+                style={{ padding: '4px 10px', fontSize: 12, gap: 4, background: view === 'list' ? 'var(--surface)' : 'transparent', borderRadius: 4 }}
+              >
+                <List size={13} /> List
               </button>
             </div>
-          }
-        />
-      </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.pdf,.docx,.csv,.json"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploading(true);
+                try {
+                  const result = await uploadKnowledgeFile(file);
+                  toast.success(result.message);
+                  invalidate();
+                } catch (err: unknown) {
+                  toast.error((err as Error)?.message || 'Upload failed');
+                } finally {
+                  setUploading(false);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+              }}
+            />
+            <button className="btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader2 size={15} /> : <Upload size={15} />}
+              {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+            <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
+              <Plus size={15} /> Add Article
+            </button>
+          </div>
+        }
+      />
 
       <CreateDialog
         open={dialogOpen}
@@ -271,15 +257,63 @@ export default function KnowledgePage() {
       />
 
       {/* ── Main area ── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', margin: '16px 0 0' }}>
+      <div style={{ position: 'relative', marginTop: 24 }}>
 
         {view === 'graph' ? (
-          <ReactFlowProvider>
-            <GraphCanvas onNodeClick={setSelected} />
-          </ReactFlowProvider>
+          /* Graph canvas with explicit height so ReactFlow renders */
+          <div style={{ height: 'calc(100vh - 240px)', minHeight: 500, position: 'relative' }}>
+            <ReactFlowProvider>
+              <GraphCanvas onNodeClick={setSelected} />
+            </ReactFlowProvider>
+
+            {/* Node detail panel — absolute over the graph */}
+            {selected && (
+              <div style={{
+                position: 'absolute', right: 0, top: 0, bottom: 0, width: 320,
+                background: 'var(--surface)', borderLeft: '1px solid var(--border)',
+                display: 'flex', flexDirection: 'column', zIndex: 10,
+                boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+                borderRadius: '0 12px 12px 0',
+              }}>
+                <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: 5, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span className="badge" style={{ background: catColor(selected.category), color: '#fff', fontSize: 10 }}>
+                        {selected.category}
+                      </span>
+                      {selected.tags?.map(t => (
+                        <span key={t} className="badge" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', fontSize: 10 }}>{t}</span>
+                      ))}
+                    </div>
+                    <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, fontFamily: 'var(--font-heading)', lineHeight: 1.3 }}>
+                      {selected.title}
+                    </h2>
+                  </div>
+                  <button className="btn btn-ghost" style={{ padding: '4px 6px', flexShrink: 0 }} onClick={() => setSelected(null)}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+                  <p style={{ fontSize: 13, lineHeight: 1.75, color: 'var(--foreground-secondary)', whiteSpace: 'pre-wrap', margin: 0 }}>
+                    {selected.content}
+                  </p>
+                </div>
+                <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+                  <button
+                    className="btn"
+                    style={{ width: '100%', justifyContent: 'center', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                    onClick={() => { if (confirm(`Delete "${selected.title}"?`)) deleteMut.mutate(selected.id); }}
+                    disabled={deleteMut.isPending}
+                  >
+                    <Trash2 size={14} /> Delete Article
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           /* ── List view ── */
-          <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
+          <div>
             <div style={{ position: 'relative', marginBottom: 16 }}>
               <Search size={17} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
               <input
@@ -300,7 +334,7 @@ export default function KnowledgePage() {
               <div className="etched-surface" style={{ padding: 60, textAlign: 'center' }}>
                 <BookOpen size={40} color="var(--muted)" style={{ marginBottom: 12, opacity: 0.5 }} />
                 <p style={{ color: 'var(--muted)' }}>
-                  {query ? <>No results for &ldquo;{query}&rdquo;</> : 'No articles yet'}
+                  {query ? <>No results for &ldquo;{query}&rdquo;</> : 'No articles yet — add your first with "Add Article"'}
                 </p>
               </div>
             )}
@@ -339,52 +373,6 @@ export default function KnowledgePage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Node detail panel ── */}
-        {selected && (
-          <div style={{
-            position: 'absolute', right: 0, top: 0, bottom: 0, width: 340,
-            background: 'var(--surface)', borderLeft: '1px solid var(--border)',
-            display: 'flex', flexDirection: 'column', zIndex: 10,
-            boxShadow: '-4px 0 24px rgba(0,0,0,0.18)',
-          }}>
-            <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 5, marginBottom: 6, flexWrap: 'wrap' }}>
-                  <span className="badge" style={{ background: catColor(selected.category), color: '#fff', fontSize: 10 }}>
-                    {selected.category}
-                  </span>
-                  {selected.tags?.map(t => (
-                    <span key={t} className="badge" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', fontSize: 10 }}>{t}</span>
-                  ))}
-                </div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, fontFamily: 'var(--font-heading)', lineHeight: 1.3 }}>
-                  {selected.title}
-                </h2>
-              </div>
-              <button className="btn btn-ghost" style={{ padding: '4px 6px', flexShrink: 0 }} onClick={() => setSelected(null)}>
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-              <p style={{ fontSize: 13, lineHeight: 1.75, color: 'var(--foreground-secondary)', whiteSpace: 'pre-wrap', margin: 0 }}>
-                {selected.content}
-              </p>
-            </div>
-
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-              <button
-                className="btn"
-                style={{ width: '100%', justifyContent: 'center', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
-                onClick={() => { if (confirm(`Delete "${selected.title}"?`)) deleteMut.mutate(selected.id); }}
-                disabled={deleteMut.isPending}
-              >
-                <Trash2 size={14} /> Delete Article
-              </button>
             </div>
           </div>
         )}

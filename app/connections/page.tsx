@@ -10,7 +10,7 @@ import { ConnectModal } from '@/components/ui/connect-modal';
 import { toast } from 'sonner';
 import {
   Plug, Database, MapPin, MessageCircle, Mail, Calendar,
-  FileText, Globe, CreditCard, BookOpen
+  FileText, Globe, CreditCard, BookOpen, Network, Play, Loader2,
 } from 'lucide-react';
 
 const INTEGRATIONS = [
@@ -103,6 +103,14 @@ const INTEGRATIONS = [
     status: 'disconnected' as const,
     features: ['Payments', 'Invoices', 'Reporting'],
   },
+  {
+    name: 'Graphify',
+    description: 'Build a semantic knowledge graph from your articles and export an Obsidian Canvas file to your vault.',
+    icon: Network,
+    provider: 'graphify',
+    status: 'disconnected' as const,
+    features: ['Knowledge Graph', 'Obsidian Canvas', 'AI Insights', 'Semantic Clusters'],
+  },
 ];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
@@ -115,6 +123,7 @@ const BACKEND_TO_UI: Record<string, string> = {
   facebook: 'facebook',
   instagram: 'instagram',
   obsidian: 'obsidian',
+  graphify: 'graphify',
   'google-maps': 'google-maps',
   'web-scraper': 'web-scraper',
   csv: 'csv',
@@ -125,6 +134,8 @@ export default function ConnectionsPage() {
   const router = useRouter();
   const [liveStatuses, setLiveStatuses] = useState<Record<string, string>>({});
   const [modalProvider, setModalProvider] = useState<string | null>(null);
+  const [graphifyRunning, setGraphifyRunning] = useState(false);
+  const [graphifyResult, setGraphifyResult] = useState<{ articles_processed: number; graph_nodes: number; canvas_written: boolean; insights: { suggested_questions: string[] } } | null>(null);
 
   // Fetch live statuses for integrations that can be checked in real-time.
   const fetchLive = async () => {
@@ -213,6 +224,22 @@ export default function ConnectionsPage() {
     toast.success(`${provider} disconnected`);
   };
 
+  const runGraphify = async () => {
+    setGraphifyRunning(true);
+    setGraphifyResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/connections/graphify/run`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.detail || 'Run failed');
+      setGraphifyResult(data);
+      toast.success(`Graph built: ${data.graph_nodes} nodes${data.canvas_written ? ', canvas saved to vault' : ''}`);
+    } catch (err: unknown) {
+      toast.error((err as Error)?.message || 'Graphify run failed');
+    } finally {
+      setGraphifyRunning(false);
+    }
+  };
+
   const modalIntegration = modalProvider
     ? INTEGRATIONS.find(i => i.provider === modalProvider)
     : null;
@@ -260,6 +287,42 @@ export default function ConnectionsPage() {
           />
         ))}
       </div>
+
+      {/* Graphify run panel — shown when graphify is connected */}
+      {mergedIntegrations.find(i => i.provider === 'graphify')?.status === 'connected' && (
+        <div className="card" style={{ marginTop: 28, padding: 20, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Network size={20} color="var(--accent)" />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>Graphify Knowledge Graph</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  {graphifyResult
+                    ? `Last run: ${graphifyResult.articles_processed} articles → ${graphifyResult.graph_nodes} nodes${graphifyResult.canvas_written ? ' · canvas saved to vault' : ''}`
+                    : 'Run graphify to build a semantic graph and export an Obsidian Canvas'}
+                </div>
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={runGraphify} disabled={graphifyRunning}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {graphifyRunning ? <Loader2 size={15} style={{ animation: 'spin 0.8s linear infinite' }} /> : <Play size={15} />}
+              {graphifyRunning ? 'Building graph…' : 'Build Graph Now'}
+            </button>
+          </div>
+          {graphifyResult?.insights?.suggested_questions?.length ? (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Suggested questions from your knowledge base
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {graphifyResult.insights.suggested_questions.map((q, i) => (
+                  <li key={i} style={{ fontSize: 13, color: 'var(--foreground-secondary)' }}>{q}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {modalIntegration && (
         <ConnectModal

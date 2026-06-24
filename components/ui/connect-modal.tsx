@@ -159,6 +159,21 @@ export const PROVIDER_SPECS: Record<string, ProviderSpec> = {
     ],
     note: 'Stored locally in this browser — the backend does not yet manage finance credentials.',
   },
+  graphify: {
+    image: `${CARD_BASE}/integration-vault.jpg`,
+    backendProvider: 'graphify',
+    instructions: [
+      { text: 'Graphify builds a semantic knowledge graph from your articles and exports an Obsidian Canvas file.' },
+      { text: 'Enter the absolute path to your Obsidian vault. The canvas will be saved inside a "Socrates AI/" subfolder.' },
+      { text: 'Example path:' },
+      { code: true, text: 'C:\\Users\\you\\Documents\\MyVault' },
+      { text: 'Leave vault path empty to only see graph insights in the web app without exporting to Obsidian.' },
+    ],
+    fields: [
+      { name: 'vault_path', label: 'Obsidian vault path (optional)', kind: 'config', type: 'text', placeholder: 'C:\\Users\\you\\Documents\\MyVault' },
+    ],
+    note: 'After connecting, click "Build Graph Now" on the integrations page to generate the graph and write the canvas file.',
+  },
 };
 
 interface ConnectModalProps {
