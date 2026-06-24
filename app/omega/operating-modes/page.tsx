@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
@@ -11,7 +11,7 @@ const ShaderAnimation = dynamic(
   { ssr: false }
 );
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
 
 const OMEGA_AGENTS: OmegaKey[] = ['genesis', 'overmind', 'omniscient', 'eternal', 'singularity'];
 

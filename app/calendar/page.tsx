@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useQuery } from '@tanstack/react-query';
 import { listTasks, listCalendarEvents, type Task } from '@/lib/api-client';
@@ -366,7 +366,7 @@ function GoogleCalendarTab() {
   const handleSync = () => {
     setSyncing(true);
     // Try actual sync via API, fall back to philosopher instructions
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1'}/connections/google_calendar/auth-url`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/proxy'}/connections/google_calendar/auth-url`)
       .then(r => r.json())
       .then(data => {
         if (data?.auth_url) {

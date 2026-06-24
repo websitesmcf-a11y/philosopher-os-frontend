@@ -113,7 +113,7 @@ const INTEGRATIONS = [
   },
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
 
 // Maps a backend connection provider name to the UI provider key in INTEGRATIONS.
 const BACKEND_TO_UI: Record<string, string> = {

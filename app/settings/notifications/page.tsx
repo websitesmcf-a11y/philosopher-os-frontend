@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Bell, ArrowLeft, Save, Loader2, BellOff, BellRing, Send, AlertTriangle, CheckCircle, XCircle, MessageCircle, Mail } from 'lucide-react';

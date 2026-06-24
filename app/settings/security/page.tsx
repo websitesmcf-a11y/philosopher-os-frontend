@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Shield, ArrowLeft, Loader2, Smartphone, Key, Clock, LogIn, XCircle, CheckCircle, AlertTriangle, Info, Laptop, Monitor } from 'lucide-react';
@@ -99,7 +99,7 @@ function ToggleSwitch({ checked, onChange, id }: { checked: boolean; onChange: (
   );
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-a93f0.up.railway.app/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
 
 export default function SecuritySettingsPage() {
   const [loaded, setLoaded] = useState(false);
