@@ -175,6 +175,38 @@ export default function OperatingModesPage() {
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  // Load last singularity conversation on mount so history persists across page refreshes
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/chat/conversations?agent=singularity&limit=1`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const last = data.items?.[0];
+        if (!last) return;
+        const msgRes = await fetch(`${API_BASE}/chat/conversations/${last.id}/messages`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!msgRes.ok) return;
+        const msgData = await msgRes.json();
+        const loaded: MissionMessage[] = (msgData.items || []).map((m: any) => ({
+          role: m.role === 'assistant' || m.role === 'agent' ? 'coordinator' : 'user',
+          agent: 'singularity' as OmegaKey,
+          content: m.content,
+          timestamp: new Date(m.created_at || Date.now()),
+        }));
+        if (loaded.length > 0) {
+          setConvId(last.id);
+          setMessages(loaded);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
   const level = LEVEL_DETAIL.find(l => l.id === selectedLevel)!;
   const levelToken = OMEGA_LEVELS.find(l => l.id === selectedLevel)!;
 

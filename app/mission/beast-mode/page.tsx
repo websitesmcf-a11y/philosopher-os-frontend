@@ -97,6 +97,31 @@ export default function BeastModePage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [checkpoints, setCheckpoints] = useState<{label:string;status:'pending'|'running'|'done'|'error';detail?:string}[]>([]);
+  // Shared conversation ID across all agents in a mission — gives every agent the full context
+  const [beastConvId, setBeastConvId] = useState<string | undefined>();
+
+  // Restore last beast-mode conversation on mount
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('beast_conv_id') : null;
+    if (stored) setBeastConvId(stored);
+    const API_BASE = '/api/proxy';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/chat/conversations?agent=plato&limit=5`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        // Find the most recent beast-mode conversation (stored in localStorage)
+        if (stored && data.items?.some((c: any) => c.id === stored)) {
+          // Already restored from localStorage
+          return;
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setLoadProgress(p => Math.min(p + 2, 100)), 100);
@@ -148,12 +173,20 @@ export default function BeastModePage() {
       setCheckpoints(p => { const n = [...p]; n[1] = {...n[1], status: 'done'}; return n; }); addLog(`✅ Mission plan created`); setProgress(20);
       if (selectedLevel !== 'dry_run' && selectedAgents.length > 0) {
         let completed = 0, failed = 0;
+        let sharedConvId = beastConvId;
         for (let i = 0; i < selectedAgents.length; i++) {
           const agent = selectedAgents[i], cpIdx = 2 + i;
           setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'running'}; return n; });
           addLog(`⏳ Agent ${i+1}/${selectedAgents.length}: ${agent} running...`); setProgress(20 + Math.floor((i / selectedAgents.length) * 70));
           try {
-            const response = await chatWithAgent(objective, agent, undefined);
+            // Pass sharedConvId so every agent sees the full mission context
+            const response = await chatWithAgent(objective, agent, sharedConvId);
+            // First agent creates the conversation — reuse it for all subsequent agents
+            if (response.conversation_id && !sharedConvId) {
+              sharedConvId = response.conversation_id;
+              setBeastConvId(sharedConvId);
+              if (typeof window !== 'undefined') localStorage.setItem('beast_conv_id', sharedConvId);
+            }
             setCheckpoints(p => { const n = [...p]; n[cpIdx] = {...n[cpIdx], status: 'done', detail: response.reply?.slice(0,80)}; return n; });
             addLog(`✅ Agent ${i+1}/${selectedAgents.length}: ${agent} — ${(response.reply||'').slice(0,150)}`); completed++;
           } catch (err: any) {
@@ -232,7 +265,10 @@ export default function BeastModePage() {
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
             {missionRunning ? <button className="btn" onClick={() => { setMissionRunning(false); setMissionActive(false); }} style={{ padding:'10px 24px', border:'1px solid #ef4444', color:'#ef4444', background:'rgba(239,68,68,0.1)', fontWeight:600 }}><Square size={16} /> Stop</button>
-            : <button className="btn" onClick={() => setMissionActive(false)} style={{ padding:'10px 24px', border:'1px solid var(--border)', fontWeight:600 }}>Back to Controls</button>}
+            : <>
+                <button className="btn" onClick={() => setMissionActive(false)} style={{ padding:'10px 24px', border:'1px solid var(--border)', fontWeight:600 }}>Back to Controls</button>
+                <button className="btn" onClick={() => { setBeastConvId(undefined); if (typeof window !== 'undefined') localStorage.removeItem('beast_conv_id'); setMissionActive(false); setLogs([]); }} style={{ padding:'10px 24px', border:'1px solid rgba(201,162,77,0.4)', color:'#C9A24D', background:'rgba(201,162,77,0.08)', fontWeight:600, marginLeft:8 }}>New Mission</button>
+              </>}
           </div>
         </div>
       </div>

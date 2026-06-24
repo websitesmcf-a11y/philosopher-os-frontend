@@ -194,11 +194,8 @@ export default function SingularityPage() {
   const [fadeIn, setFadeIn] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(initialLevel);
   const [showLevelPicker, setShowLevelPicker] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([{
-    role: 'agent',
-    content: `I am **Singularity** — The End of All.\n\nAll five Omega intelligences are unified under my coordination. Operating at **${OMEGA_LEVELS.find(l => l.id === initialLevel)?.name || 'Ascension'}** level.\n\nGive me the mission. I will coordinate everything.`,
-    timestamp: new Date(),
-  }]);
+  const INTRO = `I am **Singularity** — The End of All.\n\nAll five Omega intelligences are unified under my coordination. Operating at **${OMEGA_LEVELS.find(l => l.id === initialLevel)?.name || 'Ascension'}** level.\n\nGive me the mission. I will coordinate everything.`;
+  const [messages, setMessages] = useState<Message[]>([{ role: 'agent', content: INTRO, timestamp: new Date() }]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [convId, setConvId] = useState<string | undefined>();
@@ -206,6 +203,38 @@ export default function SingularityPage() {
   const endRef = useRef<HTMLDivElement>(null);
 
   const level = OMEGA_LEVELS.find(l => l.id === selectedLevel)!;
+
+  // Load last conversation from DB on mount
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/chat/conversations?agent=singularity&limit=1`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const last = data.items?.[0];
+        if (!last) return;
+        const msgRes = await fetch(`${API_BASE}/chat/conversations/${last.id}/messages`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!msgRes.ok) return;
+        const msgData = await msgRes.json();
+        const loaded: Message[] = (msgData.items || []).map((m: any) => ({
+          role: m.role === 'assistant' ? 'agent' : m.role,
+          content: m.content,
+          timestamp: new Date(m.created_at || Date.now()),
+        }));
+        if (loaded.length > 0) {
+          setConvId(last.id);
+          setMessages([{ role: 'agent', content: INTRO, timestamp: new Date() }, ...loaded]);
+        }
+      } catch { /* ignore */ }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
