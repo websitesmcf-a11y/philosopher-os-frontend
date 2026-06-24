@@ -569,6 +569,32 @@ export async function uploadKnowledgeFile(file: File, title?: string, category?:
   return res.json();
 }
 
+// ─── Knowledge Graph ─────────────────────────────────
+
+export interface KnowledgeGraphNode {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  created_at?: string;
+}
+
+export interface KnowledgeGraphEdge {
+  source: string;
+  target: string;
+  similarity: number;
+}
+
+export interface KnowledgeGraph {
+  nodes: KnowledgeGraphNode[];
+  edges: KnowledgeGraphEdge[];
+}
+
+export async function getKnowledgeGraph(): Promise<KnowledgeGraph> {
+  return request<KnowledgeGraph>('/knowledge/graph');
+}
+
 // ─── Supabase Realtime Hooks ─────────────────────────
 
 export function subscribeToTable(
