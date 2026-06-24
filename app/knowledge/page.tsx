@@ -12,11 +12,11 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
   Network, List, Plus, Upload, X, FileText,
-  Trash2, Loader2, Search, BookOpen,
+  Trash2, Loader2, Search, BookOpen, RefreshCw,
 } from 'lucide-react';
 import {
   searchKnowledge, addKnowledge, deleteKnowledge, uploadKnowledgeFile,
-  getKnowledgeGraph,
+  getKnowledgeGraph, request,
   type KnowledgeGraphNode, type KnowledgeGraphEdge,
 } from '@/lib/api-client';
 import { usePageTitle } from '@/lib/use-page-title';
@@ -150,6 +150,7 @@ export default function KnowledgePage() {
   const [query, setQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [selected, setSelected] = useState<KnowledgeGraphNode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -234,6 +235,26 @@ export default function KnowledgePage() {
             <button className="btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 size={15} /> : <Upload size={15} />}
               {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+            <button
+              className="btn"
+              onClick={async () => {
+                setSyncing(true);
+                try {
+                  const result = await request<{ added_to_graph: number; leads: number; clients: number; campaigns: number; conversations: number; obsidian: { status: string; files_written: number }; message: string }>('/knowledge/sync-everything', { method: 'POST' });
+                  toast.success(result.message);
+                  invalidate();
+                } catch (e: unknown) {
+                  toast.error((e as Error)?.message || 'Sync failed');
+                } finally {
+                  setSyncing(false);
+                }
+              }}
+              disabled={syncing}
+              title="Pull leads, clients, campaigns & chats into the memory graph"
+            >
+              {syncing ? <Loader2 size={15} style={{ animation: 'spin 0.8s linear infinite' }} /> : <RefreshCw size={15} />}
+              {syncing ? 'Syncing…' : 'Sync Everything'}
             </button>
             <button className="btn btn-primary" onClick={() => setDialogOpen(true)}>
               <Plus size={15} /> Add Article
